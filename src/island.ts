@@ -6,10 +6,13 @@ import type { Contact, Settings } from './model'
 import { icon } from './icons'
 import { avatar } from './character'
 import { cloud, distantIsland, dressIsland, shadowTexture } from './scenery'
+import { characterFile, loadModel, release } from './glb'
+import { islandSurface, islandWidth } from './island-model'
 
 export type IslandMember = { contact: Contact; mood: number; linked: boolean; count: number }
 const palette = ['#fff0d8', '#fff0d9', '#fbe1cb', '#edddce']
 const platforms = [{ y: 2.12, z: -2.7, scale: .92 }, { y: -.67, z: .95, scale: 1 }]
+const detailPlatform = { y: 0, z: 0, scale: .65 }
 const elevation = 35 * Math.PI / 180
 export const periods = ['晨光', '白日', '黃昏', '夜晚']
 
@@ -24,6 +27,7 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
   let renderer: T.WebGLRenderer
   try { renderer = new T.WebGLRenderer({ antialias: !low, alpha: true, powerPreference: 'low-power' }) }
   catch { host.classList.add('no-webgl'); return null }
+  const modelDirectory = new URL('models/', new URL(import.meta.env.BASE_URL, document.baseURI))
   renderer.setPixelRatio(Math.min(devicePixelRatio, low ? 1 : 1.85))
   renderer.toneMapping = T.ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.03
@@ -64,21 +68,42 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
   sun.position.set(-8, 16, 7)
   scene.add(sun, new T.HemisphereLight('#fffbef', '#a8865b', 1.40), new T.AmbientLight('#fff1de', .29))
   const texture = shadowTexture()
-  const islands = (compact ? [{ y: 0, z: 0, scale: .65 }] : platforms).map(({ y, z, scale }, i) => {
+  let disposed = false
+  const islands = (compact ? [detailPlatform] : platforms).map((platform, i) => {
     const group = new T.Group()
-    group.position.set(0, y, z)
-    group.scale.setScalar(scale)
+    const fallback = new T.Group()
+    group.position.set(0, platform.y, platform.z)
+    group.scale.setScalar(platform.scale)
+    group.add(fallback)
     scene.add(group)
+    let label: CSS2DObject | undefined
     if (!compact) {
       const node = document.createElement('span')
       node.className = 'island-sign'
       node.innerHTML = icon('people')
       node.append(i === 0 ? '本週已聯繫' : '待聯繫')
-      const label = new CSS2DObject(node)
+      label = new CSS2DObject(node)
       label.position.set(0, .34, 2.11)
       group.add(label)
     }
-    return dressIsland(group, low, i === 1, texture)
+    const { fire, lamp } = dressIsland(fallback, low, i === 1, texture)
+    const island = { platform, fire, lamp, surface: undefined as ReturnType<typeof islandSurface> }
+    void loadModel(i === 0 ? 'island_top' : 'island_bottom', modelDirectory, low).then(source => {
+      if (disposed || !source) return
+      const surface = islandSurface(source)
+      if (!surface) return
+      group.add(surface.object.clone(), fire, lamp)
+      fallback.removeFromParent()
+      release(fallback)
+      for (const light of [fire, lamp]) {
+        light.position.x *= surface.xScale
+        light.position.z *= surface.zScale
+        light.position.y += surface.groundAt(light.position.x, light.position.z)
+      }
+      if (label) label.position.z *= surface.zScale
+      island.surface = surface
+    }).catch(() => {})
+    return island
   })
   if (!compact) {
     // Place distant props by projected height while keeping depth for the warm aerial haze.
@@ -106,9 +131,6 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
   let members: IslandMember[] = [], preferences: Settings | undefined, override: number | null = null
   let frame = 0
   let focus: { member: string; start: number; position: T.Vector3; target: T.Vector3; point: T.Vector3; end: T.Vector3; zoom: number } | null = null
-  const release = (object: T.Object3D) => object.traverse(child => {
-    if (child instanceof T.Mesh || child instanceof T.Points) { child.geometry.dispose(); child.material.dispose() }
-  })
   function select(member: string) {
     const model = avatars.get(member)
     if (!model || compact || focus) return
@@ -116,7 +138,7 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
     if (model.attention) model.celebrating = start
     const screenCenter = (camera.top + camera.bottom) / 2
     const up = new T.Vector3(0, 1, 0).applyQuaternion(camera.quaternion)
-    const point = model.root.position.clone().add(new T.Vector3(0, .95, 0)).addScaledVector(up, -screenCenter)
+    const point = model.root.position.clone().add(new T.Vector3(0, model.height * .49, 0)).addScaledVector(up, -screenCenter)
     focus = { member, start, zoom: camera.zoom, target: controls.target.clone(), position: camera.position.clone(), point, end: camera.position.clone().sub(controls.target).add(point) }
     controls.enabled = false
   }
@@ -202,7 +224,7 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
       const speed = mood === 0 ? .56 : mood === 1 ? .29 : .15
       const angle = i * 2.39996 + phase * speed
       const groupIndex = linked ? 0 : 1
-      const platform = compact ? { y: 0, z: 0, scale: .65 } : platforms[groupIndex]
+      const { platform, surface } = islands[compact ? 0 : groupIndex]
       const slot = slots[groupIndex]++
       const columns = Math.min(4, groupCounts[groupIndex])
       const column = slot % columns
@@ -215,20 +237,24 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
       const gestureIndex = (i + Math.floor(phase / cycle)) % 4
       const approaching = attention && !compact && (gestureIndex === 1 || (mood === 2 && gestureIndex === 3)) && row === 0
       const walk = mood === 0 ? .31 : .22
-      const x = compact ? Math.sin(orbit) * .65 : (lane + Math.sin(orbit) * walk) * platform.scale
+      const localX = compact ? Math.sin(orbit) : lane + Math.sin(orbit) * walk
       const depth = compact ? Math.cos(orbit) * .6 : -.73 + Math.cos(orbit) * walk * 1.15 + (column % 2 - .5) * .64 + (row % 3) * .66
-      const z = platform.z + (restingAtFire ? -1 + Math.cos(orbit) * .26 : depth + (approaching ? .86 : 0)) * platform.scale
+      const localZ = restingAtFire ? -1 + Math.cos(orbit) * .26 : depth + (approaching ? .86 : 0)
+      const x = localX * (surface?.xScale ?? 1) * platform.scale
+      const z = platform.z + localZ * (surface?.zScale ?? 1) * platform.scale
       const jump = model.jumping ? Math.min(1, (now - model.jumping) / 1150) : 1
       const celebration = model.celebrating ? Math.min(1, (now - model.celebrating) / 880) : 1
-      const ground = platform.y + .047
       const follow = 1 - Math.pow(.935, dt * 60)
-      if (model.root.position.lengthSq() === 0) model.root.position.set(x, ground, z)
+      if (model.root.position.lengthSq() === 0) model.root.position.set(x, platform.y + .047, z)
       model.root.position.x = jump < 1 ? T.MathUtils.lerp(model.from.x, x, jump) : T.MathUtils.lerp(model.root.position.x, x, follow)
       model.root.position.z = jump < 1 ? T.MathUtils.lerp(model.from.z, z, jump) : T.MathUtils.lerp(model.root.position.z, z, follow)
+      const floorX = (jump < 1 ? x : model.root.position.x) / platform.scale
+      const floorZ = ((jump < 1 ? z : model.root.position.z) - platform.z) / platform.scale
+      const ground = platform.y + (surface?.groundAt(floorX, floorZ) ?? 0) * platform.scale + .047
       const hop = attention ? Math.abs(Math.sin(phase * 5.4)) * (mood === 1 ? .09 : .20) : mood === 0 && phase % 11 < 1.1 ? Math.abs(Math.sin(phase * 5)) * .12 : 0
       const arcHeight = jump < 1 ? T.MathUtils.lerp(model.from.y, ground, jump) + Math.sin(jump * Math.PI) * 1.7 : ground
       model.root.position.y = arcHeight + Math.sin(celebration * Math.PI) * .46 + hop
-      model.shadow.position.set(model.root.position.x + (period === 2 ? .21 : .10), platform.y + .083, model.root.position.z + .095)
+      model.shadow.position.set(model.root.position.x + (period === 2 ? .21 : .10), ground + .036, model.root.position.z + .095)
       model.shadow.scale.set(period === 2 ? 1.48 : 1, 1, 1)
       model.shadow.material.opacity = jump < 1 ? 0 : (period === 3 ? .26 : .36) / (1 + model.root.position.y - ground)
       const facing = Math.atan2(camera.position.x - model.root.position.x, camera.position.z - model.root.position.z)
@@ -247,27 +273,34 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
         arm.rotation.z = T.MathUtils.lerp(arm.rotation.z, waving ? gesture : thumb * .12, .19)
         arm.rotation.x = sitting ? -.8 : stride * thumb * .55
         model.legs[side].rotation.x = T.MathUtils.lerp(model.legs[side].rotation.x, sitting ? -1.42 : stride * thumb, .15)
-        model.brows[side].rotation.z = mood >= 2 ? thumb * -.36 : 0
-        model.eyes[side].scale.y = period === 3 && sitting ? .24 : 1
         model.tears[side].visible = mood === 2 && !attention
+        if (model.face) {
+          model.face.brows[side].rotation.z = mood >= 2 ? thumb * -.36 : 0
+          model.face.eyes[side].scale.y = period === 3 && sitting ? .24 : 1
+        }
       })
-      model.smile.visible = mood !== 1
-      model.smile.rotation.z = mood >= 2 && !attention ? 0 : Math.PI
-      model.mouth.visible = mood === 1
+      if (model.applyRig) {
+        model.height = islandWidth * platform.scale * .18
+        model.root.scale.setScalar(model.height)
+        model.applyRig()
+      }
+      if (model.face) {
+        model.face.smile.visible = mood !== 1
+        model.face.smile.rotation.z = mood >= 2 && !attention ? 0 : Math.PI
+        model.face.mouth.visible = mood === 1
+        model.label.position.y = sitting ? 1.96 : 2.19
+        for (const material of model.face.materials) {
+          material.opacity = T.MathUtils.lerp(material.opacity, mood === 3 && !attention ? .83 : 1, .1)
+          material.transparent = material.opacity < .995
+        }
+      }
       const cloudScale = mood >= 2 && !attention ? (period === 3 ? 1 : .58) : 0
       model.cloud.scale.setScalar(T.MathUtils.lerp(model.cloud.scale.x, cloudScale, .14))
       model.cloud.visible = model.cloud.scale.x > .025
       model.cloud.rotation.z = attention ? Math.sin(phase * 10) * .22 : 0
       model.rain.forEach((drop, index) => { drop.visible = mood === 2; drop.position.y = -.12 - ((t * 1.25 + index * .15) % .54) })
-      model.body.traverse(object => {
-        if (object instanceof T.Mesh) {
-          object.material.opacity = T.MathUtils.lerp(object.material.opacity, mood === 3 && !attention ? .83 : 1, .1)
-          object.material.transparent = object.material.opacity < .995
-        }
-      })
       model.tag.title = [contact.school, contact.department, levels[contact.openness - 1]].filter(Boolean).join('・')
       if (model.tag.textContent !== contact.name) model.tag.textContent = contact.name
-      model.label.position.y = sitting ? 1.96 : 2.19
       model.alert.visible = attention
       model.tag.disabled = compact
     })
@@ -294,9 +327,13 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
         model.root.userData = { member: contact.id, look: lookKey(contact) }
         model.tag.onclick = () => select(contact.id)
         avatars.set(contact.id, model)
+        void loadModel(characterFile(contact), modelDirectory, low).then(source => {
+          if (!disposed && source && avatars.get(contact.id) === model) model.upgrade(source)
+        }).catch(() => {})
       })
     },
     dispose() {
+      disposed = true
       cancelAnimationFrame(frame); observer.disconnect(); visibility.disconnect(); controls.dispose(); release(scene); texture.dispose(); renderer.dispose()
       renderer.domElement.remove(); labels.domElement.remove()
     },

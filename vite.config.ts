@@ -29,6 +29,28 @@ export default defineConfig({
       theme_color: '#fff9ef',
       icons: [192, 512].map(size => ({ src: `icon-${size}.png`, sizes: `${size}x${size}`, type: 'image/png', purpose: 'any maskable' })),
     },
-    workbox: { importScripts: ['notification.js'], cleanupOutdatedCaches: true, clientsClaim: true, skipWaiting: true },
+    workbox: {
+      importScripts: ['notification.js'],
+      cleanupOutdatedCaches: true,
+      clientsClaim: true,
+      skipWaiting: true,
+      runtimeCaching: [{
+        urlPattern: ({ url, sameOrigin }) => sameOrigin && /\/models\/(?:island|char)_[a-z]+\.glb$/.test(url.pathname),
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'shepherdiland-glb-v1',
+          plugins: [{
+            cacheWillUpdate: async ({ response }) => {
+              if (response.status !== 200) return null
+              const bytes = await response.clone().arrayBuffer()
+              if (bytes.byteLength < 20) return null
+              const header = new DataView(bytes)
+              return header.getUint32(0, true) === 0x46546c67 && header.getUint32(8, true) === bytes.byteLength
+                ? response : null
+            },
+          }],
+        },
+      }],
+    },
   })],
 })

@@ -2,13 +2,19 @@ import * as T from 'three'
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js'
 import { demoLook } from './model'
 import { batch, mesh, shadow } from './scenery'
+import { release } from './glb'
+import { characterRig } from './rig'
 import type { Contact } from './model'
 
-export function avatar(contact: Contact, scene: T.Scene, texture: T.Texture, low: boolean) {
-  const root = new T.Group(), body = new T.Group(), head = new T.Group()
-  root.add(body)
+const spheres = (low: boolean) => (parent: T.Object3D, color: string | number, x: number, y: number, z: number, sx: number, sy: number, sz: number) => {
+  const object = mesh(new T.SphereGeometry(1, low ? 9 : 14, low ? 7 : 10), color, parent, x, y, z, false)
+  object.scale.set(sx, sy, sz)
+  return object
+}
+
+function proceduralCharacter(contact: Contact, low: boolean) {
+  const body = new T.Group(), head = new T.Group()
   body.add(head)
-  root.scale.setScalar(1.1)
   head.position.y = 1.15
   const look = demoLook(contact), style = look?.style ?? contact.hair
   const long = (look?.hair ?? contact.hair) === 'long'
@@ -18,11 +24,7 @@ export function avatar(contact: Contact, scene: T.Scene, texture: T.Texture, low
   const piping = tint.clone().multiplyScalar(.64).getHex()
   const lining = tint.clone().lerp(new T.Color('#fff0cc'), .22).getHex()
   const hairLight = new T.Color(hair).lerp(new T.Color('#a9683c'), .12)
-  const ball = (parent: T.Object3D, color: string | number, x: number, y: number, z: number, sx: number, sy: number, sz: number) => {
-    const object = mesh(new T.SphereGeometry(1, low ? 9 : 14, low ? 7 : 10), color, parent, x, y, z, false)
-    object.scale.set(sx, sy, sz)
-    return object
-  }
+  const ball = spheres(low)
 
   const face = new T.Group()
   ball(face, skin, 0, 0, .042, .393, .385, .334)
@@ -111,11 +113,26 @@ export function avatar(contact: Contact, scene: T.Scene, texture: T.Texture, low
     pivot.add(batch(parts, false))
     return pivot
   })
-  const cloud = new T.Group()
-  cloud.position.set(0, 1.84, 0)
-  root.add(cloud)
+  const materials: T.Material[] = []
+  body.traverse(object => { if (object instanceof T.Mesh) materials.push(object.material) })
+  return { body, head, arms, legs, eyes, brows, tears, smile, mouth, materials }
+}
+
+export function avatar(contact: Contact, scene: T.Scene, texture: T.Texture, low: boolean) {
+  const root = new T.Group()
+  const { body, head, arms, legs, tears, ...face } = proceduralCharacter(contact, low)
+  root.add(body)
+  root.scale.setScalar(1.1)
+
+  const weather = new T.Group(), cloud = new T.Group()
+  weather.position.y = 1.84
+  root.add(weather)
+  weather.add(cloud)
+  const ball = spheres(low)
   for (let i = -1; i <= 1; i++) ball(cloud, '#ae9a89', i * .135, i === 0 ? .035 : 0, 0, .13, .105, .10)
   const rain = Array.from({ length: 4 }, (_, i) => mesh(new T.CapsuleGeometry(.012, .055, 2, 4), '#a3c7d6', cloud, i * .09 - .13))
+  cloud.visible = false
+  cloud.scale.setScalar(0)
 
   const tag = document.createElement('button')
   tag.className = 'nametag'
@@ -137,5 +154,31 @@ export function avatar(contact: Contact, scene: T.Scene, texture: T.Texture, low
 
   const shade = shadow(texture, .3, 1.34, .97)
   scene.add(shade)
-  return { root, body, head, eyes, shadow: shade, brows, tears, smile, mouth, arms, legs, cloud, rain, tag, label, alert, mood: -1, linked: false, jumping: 0, celebrating: 0, from: new T.Vector3(), attention: false }
+  const pose = { body, head, arms, legs }
+  const model = {
+    ...pose, root, face: face as typeof face | undefined, tears,
+    applyRig: undefined as (() => void) | undefined, height: 1.94,
+    shadow: shade, cloud, rain, tag, label, alert, mood: -1, linked: false,
+    jumping: 0, celebrating: 0, from: new T.Vector3(), attention: false,
+    upgrade(source: T.Group) {
+      const rig = characterRig(source, pose)
+      if (!rig) return
+      release(body)
+      body.removeFromParent()
+      for (const part of [body, head, ...arms, ...legs]) part.clear()
+      model.face = undefined
+      model.tears = rig.tears.map(({ x, y, z }) =>
+        ball(rig.effects, '#88c7df', x, y, z, .013, .024, .013))
+      for (const drop of model.tears) drop.visible = false
+      rig.effects.add(weather, label)
+      weather.position.set(.24, 1.035, .035)
+      weather.scale.setScalar(.62)
+      label.position.set(0, 1.15, 0)
+      alert.position.set(.47, .84, .035)
+      model.applyRig = rig.apply
+      rig.apply()
+      root.add(rig.model)
+    },
+  }
+  return model
 }
