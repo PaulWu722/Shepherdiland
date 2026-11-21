@@ -57,9 +57,9 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
     controls.target.set(0, 0, 0)
     camera.position.copy(offset)
     controls.update()
-    units = compact ? Math.max(6.7 / w, 6.0 / h) : Math.max(10.65 / w, 10.0 / h)
+    units = compact ? Math.max(6.7 / w, 6.0 / h) : Math.max(10.65 / w, 11.0 / h)
     const upper = platforms[0]
-    const mid = compact ? -.21 : upper.y * Math.cos(elevation) - upper.z * Math.sin(elevation) - h * units * .018
+    const mid = compact ? -.21 : upper.y * Math.cos(elevation) - upper.z * Math.sin(elevation) - h * units * .018 + (10.65 / w < 11.0 / h ? .6 : 0) // wide screens: drop the scene so tags clear the title
     camera.zoom = 1
     camera.left = -w * units / 2
     camera.right = w * units / 2
