@@ -1,0 +1,10 @@
+project_id = "shepherdiland"
+
+[functions.analyze-chat]
+verify_jwt = false
+
+[functions.suggest-topics]
+verify_jwt = false
+
+[functions.delete-contact]
+verify_jwt = false
