@@ -6,6 +6,8 @@ import type { Contact, Interaction, Appointment, Prayer, Settings, State, Advice
 import { mountIsland, localPeriod, periods } from './island'
 import { chatUpload } from './upload'
 import { escape } from './html'
+import { icon } from './icons'
+import { portrait } from './portraits'
 
 const $ = <T extends HTMLElement = HTMLElement>(selector: string, parent: ParentNode = document) => parent.querySelector<T>(selector)!
 const e = escape
@@ -34,16 +36,20 @@ $('#app').innerHTML = `
  <header class="top"><div class="brand"><span class="mark" aria-hidden="true">🌱</span><div><strong>Shepherdiland</strong><small>我的回訪</small></div></div><div class="top-actions"><span id="mode"></span>${button('⚙', 'settings', '', 'icon settings-button')}</div></header>
  <main id="workspace" hidden>
   <section id="island" aria-label="回訪島嶼">
-   <div class="scene" id="world"><div class="scene-caption"><h1><span aria-hidden="true">🌿</span> 我的回訪</h1><div class="scene-ornament" aria-hidden="true">✦</div></div><div id="scene-progress"></div><div class="scene-actions">${button('⟳ 重設視角', 'reset')}${button('☀ 自動時段', 'period')}</div><p class="fallback">目前裝置無法顯示 3D，仍可從名單開啟成員資料。</p></div>
+   <div class="scene" id="world"><div class="scene-caption"><h1>${icon('sprig')}<span>我的回訪</span></h1><div class="scene-ornament" aria-hidden="true">★</div></div><div id="scene-progress"></div><div class="scene-actions"><button type="button" class="icon" data-action="reset" aria-label="重設視角" title="重設視角">${icon('reset')}</button><button type="button" class="icon" data-action="period" aria-label="自動時段" title="自動時段">${icon('period')}</button></div><p class="fallback">目前裝置無法顯示 3D，仍可從名單開啟成員資料。</p></div>
    <section id="sheet" class="sheet"><button class="sheet-handle" aria-expanded="false" aria-label="展開本週回訪"><span></span></button><div id="overview"></div></section>
   </section>
   <section id="page" hidden></section>
   <nav class="nav" aria-label="主選單">
-   ${[['island', '🏝️', '島嶼'], ['contacts', '♟', '名單'], ['add', '＋', '新增'], ['calendar', '▦', '行程'], ['stats', '▁▃▆', '統計']].map(([key, icon, title]) => button(`<span aria-hidden="true">${icon}</span>${key === 'add' ? '<span class="sr-only">新增</span>' : title}`, key === 'add' ? 'add' : 'tab', key, key === 'add' ? 'nav-add' : 'nav-item')).join('')}
+   ${([['island', 'island', '島嶼'], ['contacts', 'people', '名單'], ['add', 'add', '新增'], ['calendar', 'calendar', '行程'], ['stats', 'stats', '統計']] as const).map(([key, glyph, title]) => button(`${icon(glyph)}<span${key === 'add' ? ' class="sr-only"' : ''}>${title}</span>`, key === 'add' ? 'add' : 'tab', key, key === 'add' ? 'nav-add' : 'nav-item')).join('')}
   </nav>
  </main>
  <section id="auth" hidden></section><dialog id="detail"></dialog><dialog id="modal"></dialog><div id="toast" role="status"></div>`
 $('.settings-button').setAttribute('aria-label', '設定')
+document.addEventListener('error', event => {
+  const image = event.target
+  if (image instanceof HTMLImageElement && image.parentElement?.classList.contains('portrait')) image.hidden = true
+}, true)
 const modal = $<HTMLDialogElement>('#modal'), detail = $<HTMLDialogElement>('#detail')
 const scene = mountIsland($('#world'), openDetail)
 const todayRows = () => state.appointments.filter(row => row.date === day() && row.status === 'planned').sort((a, b) => a.time.localeCompare(b.time))
@@ -56,49 +62,66 @@ const refreshTheme = () => {
   document.documentElement.dataset.period = String(current)
   scene?.period(period)
   detailScene?.period(period)
-  $('[data-action="period"]').textContent = period === null ? '◐ 自動時段' : `◐ ${periods[period]}`
+  const control = $('[data-action="period"]')
+  control.title = period === null ? '自動時段' : `時段：${periods[period]}`
+  control.setAttribute('aria-label', control.title)
+  control.dataset.manual = String(period !== null)
 }
 function progress(count = state.contacts.filter(contact => stateOf(contact).linked).length, goal = state.settings.weekly_target) {
-  return `<div class="progress" style="--progress:${Math.min(100, count / goal * 100)}%" aria-label="本週 ${count}/${goal} 人"><div><small>本週</small><strong>${count}<span>/${goal}</span></strong><small>人</small></div></div>`
+  const fraction = Math.min(100, count / goal * 100)
+  return `<div class="progress" role="img" aria-label="本週 ${count}/${goal} 人"><div class="progress-ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="progress-track" cx="50" cy="50" r="44"/>${fraction ? `<circle class="progress-value" cx="50" cy="50" r="44" pathLength="100" stroke-dasharray="${fraction} 100"/>` : ''}</svg><div class="progress-center"><small>本週</small><strong>${count}/${goal}</strong></div></div><span class="progress-count" aria-hidden="true">${count}/${goal} 人</span></div>`
 }
 function links(contact: Contact, big = false) {
   const lineId = encodeURIComponent(contact.line_id.trim())
   const ig = encodeURIComponent(contact.instagram.replace(/^@/, '').trim())
-  const link = (href: string, label: string, kind: string) => href ? `<a class="chat ${kind}" href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>` : `<span title="尚未設定帳號" aria-disabled="true" class="chat ${kind} disabled">${label}</span>`
+  const link = (href: string, label: string, kind: 'line' | 'ig') => {
+    const content = big ? label : icon(kind)
+    return href ? `<a class="chat ${kind}" href="${href}" target="_blank" rel="noopener noreferrer" aria-label="${label}">${content}</a>` : `<span title="尚未設定 ${kind === 'line' ? 'LINE' : 'IG'}" aria-label="${label}，尚未設定帳號" aria-disabled="true" class="chat ${kind} disabled">${content}</span>`
+  }
   return `<div class="chat-links">${link(lineId ? contact.line_type === 'official' ? `https://line.me/R/oaMessage/${lineId}/` : `https://line.me/ti/p/~${lineId}` : '', big ? '用 LINE 聊天' : 'LINE', 'line')}${link(ig ? `https://instagram.com/direct/t/${ig}` : '', big ? '用 IG 聊天' : 'IG', 'ig')}${ig && big ? link(`https://ig.me/m/${ig}`, 'IG 備援', 'ig') : ''}</div>`
 }
-function person(contact: Contact) {
+function person(contact: Contact, onSheet = false) {
   const value = stateOf(contact)
-  return `<article class="person"><button type="button" class="person-main" data-action="detail" data-value="${contact.id}"><span class="portrait mood-${value.mood}" aria-label="${moods[value.mood]}">${contact.hair === 'long' ? '👧🏻' : '👦🏻'}</span><span class="person-details"><strong>${e(contact.name)}</strong><small>${e(contact.school)}・${e(contact.department)}</small></span></button><div class="person-status">${openness(contact.openness)}<small class="day-badge ${value.mood >= 2 ? 'day-urgent' : ''}" title="${lastText(value.elapsed)}">${Number.isFinite(value.elapsed) ? `${value.elapsed} 天` : '未聯繫'}</small></div>${links(contact)}</article>`
+  const level = openness(contact.openness)
+  return `<article class="person"><button type="button" class="person-main" data-action="detail" data-value="${e(contact.id)}">${portrait(contact, '', moods[value.mood])}<span class="person-details"><strong>${e(contact.name)}</strong><small>${[contact.school, contact.department].filter(Boolean).map(e).join('・')}</small></span></button>${onSheet ? `<span class="sheet-level" title="敞開程度：${levels[contact.openness - 1]}">${level}</span>` : ''}<div class="person-status">${onSheet ? '' : level}<small class="day-badge ${value.mood >= 2 ? 'day-urgent' : ''}" title="${lastText(value.elapsed)}">${Number.isFinite(value.elapsed) ? `${value.elapsed} 天` : '未聯繫'}</small></div>${links(contact)}</article>`
 }
 function appointment(row: Appointment, full = false) {
+  const time = e(row.time.slice(0, 5))
+  const contact = find(row.contact_id)
+  const mapUrl = row.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(row.location)}` : ''
+  if (!full) {
+    const navigate = (className: string, content: string) => `<a class="${className}" href="${mapUrl}" target="_blank" rel="noopener noreferrer" aria-label="導航至${e(row.location)}">${content}</a>`
+    return expanded ? `<article class="appointment today-appointment">
+      ${portrait(contact, 'appointment-portrait')}<div class="appointment-summary" title="${e(row.scripture)}"><strong>${time}</strong><span>${e(contact?.name)}</span>${row.scripture ? `<span class="sr-only">${e(row.scripture)}</span>` : ''}</div>
+      ${mapUrl ? navigate('appointment-place', e(row.location)) : ''}
+    </article>` : `<article class="appointment today-appointment">
+      <div class="appointment-summary"><strong>${[time, e(contact?.name), e(row.location), e(row.scripture)].filter(Boolean).join('・')}</strong>${row.location ? `<small>${icon('pin')}${e(row.location)}</small>` : ''}</div>
+      ${mapUrl ? navigate('map-button', icon('navigate')) : ''}
+    </article>`
+  }
   const minutes = Math.ceil((new Date(`${row.date}T${row.time}`).getTime() - Date.now()) / 60000)
   const countdown = minutes <= 0 ? '已到約定時間' : minutes < 60 ? `${minutes} 分鐘後` : minutes < 1440 ? `${Math.floor(minutes / 60)} 小時後` : `${Math.floor(minutes / 1440)} 天後`
-  const contact = find(row.contact_id)
-  if (!full) return `<article class="appointment today-appointment">
-    <span class="portrait appointment-portrait" aria-hidden="true">${contact?.hair === 'long' ? '👧🏻' : '👦🏻'}</span>
-    <div><strong>${e(row.time.slice(0, 5))} · ${e(contact?.name)}</strong><small>${row.location ? '📍 ' + e(row.location) : ''}${row.scripture ? ` · ${e(row.scripture)}` : ''}</small></div>
-    ${row.location ? `<a class="map-button" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(row.location)}" target="_blank" rel="noopener noreferrer" aria-label="導航至${e(row.location)}"><span aria-hidden="true">➤</span></a>` : ''}
-  </article>`
-  return `<article class="appointment"><div class="appointment-time"><strong>${e(row.time.slice(0, 5))}</strong>${full ? `<small>${e(row.date)}</small>` : ''}</div><div><strong>${e(find(row.contact_id)?.name)}</strong><small>${e(row.location)}${row.scripture ? `・${e(row.scripture)}` : ''}</small>${full ? `<small>${row.status === 'planned' ? countdown : row.status === 'done' ? '已完成' : '已取消'}</small>` : ''}</div><div class="appointment-actions">${row.location ? `<a class="soft" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(row.location)}" target="_blank" rel="noopener noreferrer">導航 ↗</a>` : ''}${full ? button('編輯', 'appointment', row.id) : ''}</div></article>`
+  return `<article class="appointment"><div class="appointment-time"><strong>${time}</strong><small>${e(row.date)}</small></div><div><strong>${e(contact?.name)}</strong><small>${e(row.location)}${row.scripture ? `・${e(row.scripture)}` : ''}</small><small>${row.status === 'planned' ? countdown : row.status === 'done' ? '已完成' : '已取消'}</small></div><div class="appointment-actions">${mapUrl ? `<a class="soft" href="${mapUrl}" target="_blank" rel="noopener noreferrer">導航 ↗</a>` : ''}${button('編輯', 'appointment', row.id)}</div></article>`
 }
-function distribution() {
+function distribution(onSheet = false) {
   const count = state.contacts.length
   const byLevel = colors.map((_, i) => state.contacts.filter(contact => contact.openness === i + 1).length)
   const byMood = moods.map((_, i) => state.contacts.filter(contact => stateOf(contact).mood === i).length)
-  return `<section class="card distribution"><h3>敞開程度分布</h3><div class="segments">${byLevel.map((number, i) => `<span style="flex:${number || (!count ? 1 : 0)};background:${colors[i]}" title="${levels[i]} ${number} 位"></span>`).join('')}</div><div class="chips">${levels.map((label, i) => `<span style="--level:${colors[i]}" class="level">${label} ${byLevel[i]}</span>`).join('')}</div></section><section class="card distribution"><h3>心情分布</h3><div class="chips">${moods.map((mood, i) => `<span class="chip">${faces[i]} ${mood}・${byMood[i]} 位</span>`).join('')}</div></section>`
+  const moodChart = `<section class="card distribution"><h3>心情分布</h3><div class="chips">${moods.map((mood, i) => `<span class="chip">${faces[i]} ${mood}・${byMood[i]} 位</span>`).join('')}</div></section>`
+  if (onSheet) return `<section class="sheet-distribution"><h3>敞開程度分布</h3><div class="distribution-bars">${byLevel.map((number, i) => `<div style="--level:${colors[i]}"><span aria-label="${levels[i]} ${number} 位" role="img"></span><strong aria-hidden="true">${number}</strong></div>`).join('')}</div></section><div class="sheet-moods">${moodChart}</div>`
+  return `<section class="card distribution"><h3>敞開程度分布</h3><div class="segments">${byLevel.map((number, i) => `<span style="flex:${number || (!count ? 1 : 0)};background:${colors[i]}" title="${levels[i]} ${number} 位"></span>`).join('')}</div><div class="chips">${levels.map((label, i) => `<span style="--level:${colors[i]}" class="level">${label} ${byLevel[i]}</span>`).join('')}</div></section>${moodChart}`
 }
 function overview() {
   const overdue = state.contacts.map(contact => ({ contact, ...stateOf(contact) })).filter(row => row.mood > 0)
   overdue.sort((a, b) => Number(b.mood === 2) - Number(a.mood === 2) || (b.overdue === a.overdue ? b.mood - a.mood : b.overdue - a.overdue))
   const today = todayRows()
-  return `${expanded ? `<div class="page-heading"><h1>本週回訪</h1>${progress()}</div>` : ''}
+  return `${expanded ? `<div class="sheet-heading"><h1>本週回訪</h1>${progress()}</div>` : ''}
   <div class="overview-grid">
-    <section class="today-section"><div class="section-row"><h2>${expanded ? '' : '<span aria-hidden="true">▦</span> '}今天的約</h2>${button('看行程 ↗', 'tab', 'calendar')}</div>
-    <div class="appointment-list">${today.map(row => appointment(row)).join('') || empty('今天還沒有安排約定。')}</div></section>
-    <section><div class="section-row"><h2>${expanded ? '該聯繫了' : '快快聯繫 <span aria-hidden="true">🔔</span>'}</h2>${expanded ? '' : button('展開清單 ↗', 'expand')}</div>
-    <div class="people">${overdue.slice(0, expanded ? undefined : 3).map(({ contact }) => person(contact)).join('') || empty('目前沒有逾期的回訪。')}</div></section>
-  </div>${expanded ? `<div class="split">${distribution()}</div>` : ''}`
+    <section class="today-section"><h2><button type="button" class="sheet-title-button" data-action="tab" data-value="calendar" title="看行程">${expanded ? '' : icon('calendar')}今天的約</button></h2>
+    <div class="appointment-list">${(expanded ? today : today.slice(0, 1)).map(row => appointment(row)).join('') || empty('今天還沒有安排約定。')}</div></section>
+    <section><h2>${expanded ? '該聯繫了' : `<button type="button" class="sheet-title-button" data-action="expand" title="展開聯繫清單">快快聯繫 ${icon('bell')}</button>`}</h2>
+    <div class="people">${overdue.slice(0, expanded ? undefined : 3).map(({ contact }) => person(contact, true)).join('') || empty('目前沒有逾期的回訪。')}</div></section>
+  </div>${expanded ? distribution(true) : ''}`
 }
 function contacts() {
   const departments = [...new Set(state.contacts.map(contact => contact.department))].filter(Boolean).sort()
@@ -116,7 +139,7 @@ function filterPeople() {
     (!filters.department || contact.department === filters.department) &&
     (!filters.openness || levels[contact.openness - 1] === filters.openness) &&
     (!filters.mood || moods[stateOf(contact).mood] === filters.mood),
-  ).map(person).join('') || empty('找不到符合條件的成員。')
+  ).map(contact => person(contact)).join('') || empty('找不到符合條件的成員。')
 }
 function calendar() {
   const first = (month.getDay() + 6) % 7

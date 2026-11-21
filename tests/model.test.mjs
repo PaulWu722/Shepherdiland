@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
-import { day, monday, seed, status } from '../src/model.ts'
+import { day, monday, seed, status, demoLook } from '../src/model.ts'
 
 test('seed includes two schools, all four moods, and two appointments today', () => {
   const state = seed()
@@ -20,6 +21,20 @@ test('Monday starts a new contact week in local time', () => {
   assert.equal(status(contact, interactions, sunday).linked, true)
   assert.equal(monday(next), '2026-11-23')
   assert.equal(status(contact, interactions, next).linked, false)
+})
+
+test('each demo look has a PNG and supports the previous demo appearance', async () => {
+  const avatars = await Promise.all(seed().contacts.map(async (contact, i) => {
+    const look = demoLook(contact)
+    assert.ok(look)
+    assert.equal(demoLook({ ...contact, shirt: look.oldShirt, hair: i % 2 ? 'long' : 'short' }), look)
+    assert.equal(demoLook({ ...contact, introduction: '' }), undefined)
+    assert.equal(demoLook({ ...contact, shirt: '#fefefe' }), undefined)
+    const image = await readFile(new URL(`../public/avatars/${look.avatar}.png`, import.meta.url))
+    assert.equal(image.subarray(1, 4).toString(), 'PNG')
+    return look.avatar
+  }))
+  assert.equal(new Set(avatars).size, 6)
 })
 
 test('weekly goal counts local-week records and a same-day follow-up restores mood', () => {

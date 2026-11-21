@@ -1,6 +1,6 @@
 export const schools = ['亞洲大學', '朝陽科技大學']
 export const levels = ['冷淡', '禮貌', '有興趣', '想讀經', '固定讀經']
-export const colors = ['#a0a7b4', '#639bd9', '#65b595', '#e6b94f', '#db8d32']
+export const colors = ['#9b948b', '#568cc1', '#69ac5a', '#e4b74f', '#db9b45']
 export const moods = ['開心', '有點失落', '沮喪', '很久沒見']
 export const faces = ['😊', '😐', '😢', '💤']
 export const methods = ['見面', 'LINE', 'IG', '電話']
@@ -24,19 +24,33 @@ export type Settings = Goal & { weekly_target: number; defaults: Record<string, 
 export type Analysis = { summary: string; topics: string[]; appointment: { date: string; time: string; location: string; scripture: string } | null; prayer_requests: string[]; bible_progress: Contact['bible_progress']; life_updates: string; openness_hint: { level: number; reason: string } | null; follow_ups: string[]; chat_date: string }
 export type State = { contacts: Contact[]; interactions: Interaction[]; appointments: Appointment[]; prayer_requests: Prayer[]; screenshots: Screenshot[]; suggestions: Suggestion[]; settings: Settings }
 export const defaults: Settings = { frequency_mode: 'interval', frequency_value: 2, weekly_target: 5, defaults: {}, attention: true, pace: 1, vibration: false, notifications: false }
+export const demoLooks = [
+  { name: '林晨禾', avatar: 'honey', hair: 'short', style: 'curly', shirt: '#b28747', oldShirt: '#e5aa75', backdrop: '#fae4ba', islandOrder: 1 },
+  { name: '周星語', avatar: 'rose', hair: 'long', style: 'bob', shirt: '#c58388', oldShirt: '#72b6a1', backdrop: '#f6dce0', islandOrder: 2 },
+  { name: '許沐晴', avatar: 'lavender', hair: 'long', style: 'pony', shirt: '#a882bb', oldShirt: '#b495cf', backdrop: '#ebddf3', islandOrder: 5 },
+  { name: '江小嶼', avatar: 'sky', hair: 'short', style: 'swept', shirt: '#5789b5', oldShirt: '#e5aa75', backdrop: '#d5e8f8', islandOrder: 4 },
+  { name: '方予安', avatar: 'marigold', hair: 'long', style: 'bun', shirt: '#e1ad42', oldShirt: '#72b6a1', backdrop: '#fae2b9', islandOrder: 0 },
+  { name: '陳禾希', avatar: 'sage', hair: 'short', style: 'short', shirt: '#799259', oldShirt: '#b495cf', backdrop: '#e3ead0', islandOrder: 3 },
+]
+export function demoLook(contact?: Contact) {
+  if (contact?.introduction !== '校園活動認識（虛構）') return
+  return demoLooks.find((look, i) => contact.name === look.name && (
+    (contact.shirt === look.shirt && contact.hair === look.hair) ||
+    (contact.shirt === look.oldShirt && contact.hair === (i % 2 ? 'long' : 'short'))
+  ))
+}
 const empty = (): State => ({ contacts: [], interactions: [], appointments: [], prayer_requests: [], screenshots: [], suggestions: [], settings: defaults })
 export function demoAdvice(name: string, upcoming = false): Advice {
   return { topics: ['最近上課或社團有什麼新鮮事？', '最近有哪一段經文讓你印象深刻？', '這週有沒有想一起禱告的事？'], remember: '先接續上次提過的校園生活。', care: '留些空間讓對方按自己的步調分享。', opener: `嗨 ${name}，今天想到你，祝你這週順利。有空再聊～`, preparation: upcoming ? '先確認時間、地點並預備約好的經文。' : '' }
 }
 export function seed(): State {
   const state = empty()
-  const names = ['林晨禾', '周星語', '許沐晴', '江小嶼', '方予安', '陳禾希']
   const offsets = [0, -3, -7, -33, 0, -1]
-  names.forEach((name, i) => {
+  demoLooks.forEach(({ name, shirt, hair }, i) => {
     const contact = id()
     const interaction = id()
     const date = day(offsets[i])
-    state.contacts.push({ id: contact, name, school: schools[i % 2], department: ['心理系', '資工系', '社工系', '設計系', '護理系', '應英系'][i], grade: '大二', openness: i % 5 + 1, line_id: '', line_type: 'personal', instagram: '', introduction: '校園活動認識（虛構）', notes: '', hair: i % 2 ? 'long' : 'short', shirt: ['#e5aa75', '#72b6a1', '#b495cf'][i % 3], last_contact: date, frequency_mode: i === 4 ? 'weekly' : 'interval', frequency_value: i === 4 ? 3 : 2, bible_progress: i === 0 ? { book: '約翰福音', chapter: 3, total: 21 } : null, life_updates: '最近在準備課堂報告。' })
+    state.contacts.push({ id: contact, name, school: schools[i % 2], department: ['心理系', '資工系', '社工系', '設計系', '護理系', '應英系'][i], grade: '大二', openness: i % 5 + 1, line_id: '', line_type: 'personal', instagram: '', introduction: '校園活動認識（虛構）', notes: '', hair, shirt, last_contact: date, frequency_mode: i === 4 ? 'weekly' : 'interval', frequency_value: i === 4 ? 3 : 2, bible_progress: i === 0 ? { book: '約翰福音', chapter: 3, total: 21 } : null, life_updates: '最近在準備課堂報告。' })
     state.interactions.push({ id: interaction, contact_id: contact, date, method: '見面', summary: '聊了近期的課業與校園生活。', topics: ['課業'], ai: null, created_at: new Date().toISOString() })
     state.suggestions.push({ id: id(), contact_id: contact, content: demoAdvice(name, i < 2), interaction_id: interaction, generated_at: new Date().toISOString(), feedback: 0 })
     if (i < 2) state.appointments.push({ id: id(), contact_id: contact, date: day(), time: i === 0 ? '12:30' : '17:00', location: i === 0 ? '亞洲大學圖書館' : '朝陽科技大學圖書館', scripture: i === 0 ? '約翰福音 3:16' : '詩篇 23:1', status: 'planned' })

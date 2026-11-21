@@ -1,7 +1,7 @@
 :root {
   font-family: "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
-  --ink:#29473d; --muted:#5a7368; --page:#f5f5eb; --surface:#fffdf7;
-  --line:#dee8dd; --soft:#eaf1e9; --accent:#35775e; --accent-ink:#fff;
+  --ink:#382618; --muted:#6e6053; --page:#fff8ed; --surface:#fffdfa;
+  --line:#eee3d4; --soft:#f5ebd8; --accent:#4f773f; --accent-ink:#fff;
   color:var(--ink); background:var(--page); color-scheme:light;
 }
 :root[data-period="3"] {
@@ -32,37 +32,15 @@ button:focus-visible,a:focus-visible,summary:focus-visible {outline:3px solid #e
 .icon {width:42px; height:42px; border-radius:50%; background:var(--soft); color:var(--ink); border:1px solid var(--line)}
 #mode:not(:empty),.chip {font-size:.73rem; border-radius:99px; padding:.3rem .55rem; background:var(--soft); color:var(--accent)}
 #workspace {max-width:1120px; margin:auto; padding-bottom:calc(88px + env(safe-area-inset-bottom))}
-.scene {height:clamp(330px,49vh,530px); overflow:hidden; position:relative; isolation:isolate; background:linear-gradient(145deg,#c3e1e6,#7dbac5); touch-action:none}
+.scene {position:relative; overflow:hidden; isolation:isolate; background:#fff0d7; touch-action:none}
 .scene canvas,.scene-labels {position:absolute; inset:0; touch-action:none}
 .scene-labels {pointer-events:none}
-.scene-caption,#scene-progress,.scene-actions {position:absolute; z-index:2}
-.scene-caption {top:1.1rem; left:.9rem; pointer-events:none; color:#264b43}
-.scene-caption p {font-size:.78rem; color:#365950}
-.scene-caption .eyebrow {color:inherit}
-:root[data-period="3"] .scene-caption,:root[data-period="3"] .scene-caption p {color:#eff4eb}
 .eyebrow {display:block; color:var(--accent); margin-bottom:.26rem}
-#scene-progress {top:.95rem; right:.8rem}
-.progress {width:73px; height:73px; display:grid; place-items:center; border-radius:50%; background:conic-gradient(#71b092 var(--progress),#e6eee4 0); color:#31594a; flex:none}
-.progress>div {width:61px; height:61px; border-radius:50%; background:#fffdf5; display:grid; place-content:center; text-align:center; line-height:1}
-.progress small {font-size:.55rem; color:#4d6d61}
-.progress strong {font-size:1.3rem}
-.progress strong span {font-size:.8rem}
-.scene-actions {bottom:1.55rem; right:.65rem; display:flex; gap:.3rem}
-.scene-actions button {background:#fffdf3eb; color:#31594a}
-.nametag,.island-sign {background:#fffdf4ee; color:#28443e; border:0; box-shadow:0 3px 10px #28443e30; border-radius:8px; font-size:clamp(.53rem,1.5vw,.68rem); line-height:1.18; padding:.22rem .4rem; white-space:pre; text-align:center}
-.nametag {pointer-events:auto; border-bottom:3px solid var(--level); font-weight:700}
-.nametag:disabled {opacity:1; pointer-events:none}
-.nametag[data-gold=true] {box-shadow:0 0 10px #ffcf68}
-.nametag.attention,.analysis-wait span {animation:pulse 1.15s ease-in-out infinite}
-.island-sign {background:#2e6659; color:#fffdf4; font-size:.73rem}
-@keyframes pulse {50% {scale:1.1; box-shadow:0 0 0 6px #fff0a958}}
 .fallback {display:none}
-.no-webgl .fallback {display:block; position:absolute; inset:45% 1rem auto; text-align:center; color:#29473d}
-.expanded .scene {height:85px}
-.expanded .scene-caption,.expanded #scene-progress,.expanded .scene-actions,.expanded .scene-labels {display:none}
-.sheet {position:relative; z-index:3; margin-top:-14px; border-radius:24px 24px 0 0; background:var(--page); box-shadow:0 -6px 20px #25453c15; padding:0 .85rem 1rem}
-.sheet-handle {display:grid; place-items:center; width:100%; height:36px; touch-action:none; border:0; background:none}
-.sheet-handle span {height:4px; width:40px; background:#97aa9d; border-radius:10px}
+.no-webgl .fallback {display:block; position:absolute; inset:45% 1rem auto; text-align:center; color:#5c472f}
+.sheet {position:relative; z-index:3; margin-top:-14px; border-radius:28px 28px 0 0; background:var(--page); padding:0 1.2rem 1rem}
+.sheet-handle {display:grid; place-items:center; width:100%; height:20px; touch-action:none; border:0; padding:0; background:none}
+.sheet-handle span {height:4px; width:38px; background:#c9c2b7; border-radius:10px}
 .overview-grid,#page,.detail-body {display:grid; gap:1.1rem}
 .section-title {display:flex; gap:.55rem; align-items:center}
 .section-title>span {width:36px; height:36px; font-size:1.15rem}
@@ -82,10 +60,9 @@ button:focus-visible,a:focus-visible,summary:focus-visible {outline:3px solid #e
 .person-main {display:flex; align-items:center; gap:.45rem; min-width:0; text-align:left; padding:0; border:0; color:var(--ink); background:none}
 .person-main strong,.person-main small {display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .person-details {min-width:0}
-.portrait {display:grid; place-items:center; width:35px; height:35px; background:#e2efde; border-radius:11px; flex:none}
-.mood-1 {background:#f3e6c9}
-.mood-2 {background:#e7e8f5}
-.mood-3 {background:#eaebed}
+.portrait {position:relative; display:grid; width:38px; height:38px; border-radius:50%; overflow:hidden; background:var(--portrait-bg); flex:none}
+.portrait>svg,.portrait>img {grid-area:1/1; width:100%; height:100%; object-fit:cover}
+.portrait:has(img:not([hidden]))>svg {visibility:hidden}
 .person-status {text-align:right}
 .person-status small {white-space:nowrap; font-size:.63rem}
 .level {display:inline-flex; align-items:center; gap:.25rem; font-size:.7rem; white-space:nowrap}
@@ -96,12 +73,6 @@ button:focus-visible,a:focus-visible,summary:focus-visible {outline:3px solid #e
 .ig {color:#824b75; background:#f2e3ef}
 .disabled {opacity:.52}
 .empty {padding:.65rem; border:1px dashed var(--line); border-radius:11px; font-size:.83rem}
-.nav {display:grid; grid-template-columns:repeat(5,1fr); position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:min(100%,780px); padding:.35rem .45rem calc(.35rem + env(safe-area-inset-bottom)); z-index:6; background:var(--surface); border:1px solid var(--line); border-radius:16px 16px 0 0; box-shadow:0 -4px 22px #233d3118}
-.nav button {display:grid; place-content:center; justify-items:center; gap:.14rem; background:none; border:0; border-radius:10px; color:var(--muted); font-size:.71rem; min-height:48px}
-.nav button span {font-size:1.25rem; line-height:1}
-.nav [aria-current=page] {background:var(--soft); color:var(--accent)}
-.nav-add {transform:translateY(-7px)}
-.nav-add span {width:41px; height:41px; display:grid; place-items:center; background:var(--accent); color:var(--accent-ink); border-radius:14px}
 #page {padding:1.15rem .85rem}
 .page-heading {margin-bottom:.55rem}
 .card {padding:.85rem; display:grid; gap:.55rem}
@@ -148,97 +119,181 @@ summary {cursor:pointer; color:var(--accent); font-weight:700}
 #toast:empty {display:none}
 @media(min-width:760px) {
   #workspace {padding-inline:1rem}
-  #world {margin-top:.8rem; border-radius:20px}
-  .scene-caption {left:1.4rem; top:1.4rem}
   .sheet {padding-inline:1.2rem}
-  .overview-grid,.split {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .split {grid-template-columns:repeat(2,minmax(0,1fr))}
   .filters .form-grid {grid-template-columns:repeat(4,minmax(0,1fr))}
   .detail-hero {grid-template-columns:145px 1fr auto}
   .detail-hero>.soft,.detail-hero .scene {grid-column:auto; grid-row:auto}
 }
 
-:root {
-  --ink:#382618; --muted:#6e6053; --page:#fff9ef; --surface:#fffdfa;
-  --line:#eee3d4; --soft:#f5ebd8; --accent:#4f773f; --accent-ink:#fff;
-}
 body:has(#workspace:not([hidden]) #island:not([hidden])) .top {
-  position:absolute; inset:0 0 auto; height:0; padding:0; border:0; z-index:5;
+  position:absolute; inset:0 0 auto; max-width:716px; height:0; margin:auto; padding:0; border:0; z-index:5;
 }
-body:has(#workspace:not([hidden]) #island:not([hidden])) .brand,
-body:has(#workspace:not([hidden]) #island:not([hidden])) #mode {display:none}
-body:has(#workspace:not([hidden]) #island:not([hidden])) .top-actions {
-  position:absolute; top:.65rem; left:max(.55rem,calc((100% - 1080px)/2));
-}
+body:has(#workspace:not([hidden]) #island:not([hidden])) :is(.brand,#mode) {display:none}
+body:has(#workspace:not([hidden]) #island:not([hidden])) .top-actions {position:absolute; top:max(10px,env(safe-area-inset-top)); left:10px}
 body:has(#workspace:not([hidden]) #island:not([hidden])) .settings-button {
-  width:32px; height:32px; background:#fff9edd9; color:#725a3c;
+  width:26px; height:26px; padding:0; font-size:13px; background:#fff9edb8; border-color:#e7d7b96b; color:#796447;
 }
 #island {
-  --ink:#382618; --muted:#6e6053; --page:#fffdf7; --surface:#fffefa;
-  --line:#eee5d7; --soft:#f5ecdd; --accent:#567b42; --accent-ink:#fff;
-  color:var(--ink); color-scheme:light;
+  --ink:#302015; --muted:#504940; --page:#fffdf8; --surface:#fffefa; --line:#ede8dd;
+  --soft:#f5ecdd; --accent:#567b42; --accent-ink:#fff;
+  max-width:716px; margin:auto; color:var(--ink); background:var(--page); color-scheme:light;
 }
-#world {--world-height:clamp(375px,55svh,580px); height:var(--world-height); background:linear-gradient(#ffefd7,#fff2dc 44%,#eee3db 76%,#d6d9df)}
-.scene-caption {top:19px; left:44px; right:74px; text-align:center; color:#392415}
-:root[data-period="3"] .scene-caption {color:#392415}
-.scene-caption h1 {font-family:"Kaiti TC", "BiauKai", "PingFang TC", sans-serif; font-size:clamp(1.8rem,7vw,3.25rem); font-weight:900; letter-spacing:.05em; white-space:nowrap}
-.scene-caption h1 span {font-size:.72em}
-.scene-ornament {display:flex; align-items:center; justify-content:center; gap:.48rem; margin-top:.15rem; color:#a67d36}
-.scene-ornament::before,.scene-ornament::after {content:""; width:min(23%,5rem); height:1px; background:#cbb483}
-#scene-progress {top:12px; right:12px}
-.progress {width:68px; height:68px; background:conic-gradient(#67aa59 var(--progress),#eedec2 0); color:#382618}
-.progress>div {width:57px; height:57px; background:#fffbf0}
-#scene-progress .progress {width:55px; height:55px}
-#scene-progress .progress>div {width:46px; height:46px}
-#scene-progress .progress strong {font-size:1rem}
-#scene-progress .progress small:last-child {display:none}
-.scene-actions {bottom:17px; right:.45rem}
-.scene-actions button {font-size:.62rem; min-height:24px; padding:.2rem .35rem; background:#fffbecdf; color:#6c563e}
-.nametag,.island-sign {border-radius:100px; box-shadow:0 1px 5px #58371824; color:#3b281b; font-weight:750}
-.nametag {border:0; font-size:.72rem; padding:.21rem .48rem; background:#fffefa}
-.island-sign {background:#fff6d8; font-size:.8rem; padding:.24rem .68rem}
-#island.expanded #world {margin-bottom:calc(68px - var(--world-height)); filter:brightness(.8)}
-#island.expanded #world canvas {transform:translateY(-78px)}
-#island.expanded .sheet {min-height:calc(100svh - 54px); padding-bottom:4rem}
-#island.expanded .sheet .page-heading {margin-bottom:1rem}
-.sheet {border-radius:25px 25px 0 0; padding-inline:clamp(.85rem,4vw,1.65rem)}
-.sheet-handle {height:26px}
-.sheet-handle span {background:#cec6b9; width:41px}
-#island .overview-grid {grid-template-columns:1fr; gap:.85rem}
-#island .section-row h2 {font-size:1.08rem}
-#island .section-row .soft {min-height:28px}
-.today-section {background:#eff6ff; border:1px solid #d5e1ee; border-radius:13px; padding:.55rem .7rem}
-.today-section h2 span {color:#286ac0}
-#island .appointment-list,#island .people {margin-top:.32rem}
-.today-appointment {grid-template-columns:minmax(0,1fr) auto; border:0; background:transparent; box-shadow:none; padding:.15rem 0}
-.appointment-portrait {display:none}
-.map-button {display:grid; place-items:center; width:35px; height:35px; border-radius:50%; background:#2d75d0; color:#fff; box-shadow:0 2px 4px #2d5a9e33}
-.map-button span {display:block; transform:rotate(-36deg)}
+#world {
+  --world-height:clamp(345px,56.9svh,660px);
+  height:var(--world-height);
+  background:
+    radial-gradient(ellipse at 12% 36%,#fffbd1b8 0,transparent 46%),
+    radial-gradient(ellipse at 83% 29%,#fff8e0b5 0,transparent 43%),
+    radial-gradient(ellipse at 55% 85%,#fff1e0dd 0,transparent 58%),
+    linear-gradient(165deg,#ffebd1,#fff1dc 46%,#efdfd2 82%,#ded5ca);
+}
+#world[data-period="0"] {background-color:#ffefcc}
+#world[data-period="2"] {background:radial-gradient(ellipse at 22% 33%,#fff7ca,transparent 58%),linear-gradient(#ffe2c5,#fff0d5 55%,#eadbd7)}
+#world[data-period="3"] {background:radial-gradient(ellipse at 45% 25%,#fff0d7,transparent 57%),linear-gradient(#ead7c7,#f5e2ce 56%,#d8cbc4)}
+.scene-caption,#scene-progress,.scene-actions {position:absolute; z-index:2}
+.scene-caption {top:max(clamp(31px,5svh,64px),calc(env(safe-area-inset-top) + 3px)); left:0; right:0; text-align:center; color:#382211; pointer-events:none}
+.scene-caption h1,.sheet-heading h1 {
+  font-family:"Kaiti TC","BiauKai","DFKai-SB","PingFang TC",sans-serif;
+  font-weight:900; letter-spacing:.055em;
+}
+.scene-caption h1 {display:flex; align-items:center; justify-content:center; gap:.3em; font-size:clamp(29px,9.8vw,58px); line-height:1; padding-right:.28em; white-space:nowrap}
+.scene-caption .glyph-sprig {width:.9em; height:.9em}
+.scene-ornament {display:flex; align-items:center; justify-content:center; gap:.55rem; margin:.35rem 0 0; color:#a67d36; font-size:.81rem}
+.scene-ornament::before,.scene-ornament::after {content:""; width:min(20%,8.6rem); height:1px; background:#cbb483}
+#scene-progress {top:max(clamp(25px,5.2svh,64px),calc(env(safe-area-inset-top) + 3px)); right:clamp(9px,3.7vw,26px)}
+.glyph {width:1em; height:1em; display:inline-block; flex:none; vertical-align:middle}
+.progress {display:grid; gap:.13rem; justify-items:center; text-align:center; color:var(--ink); flex:none}
+.progress-ring {width:71px; aspect-ratio:1; position:relative; display:grid; place-items:center}
+.progress-ring svg {position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); fill:none; stroke-width:8.5}
+.progress-track {stroke:#efe8da}
+.progress-value {stroke:#5da453; stroke-linecap:round}
+.progress-center {display:grid; gap:.08rem; line-height:1.03; place-items:center}
+.progress-center small {display:none; color:inherit}
+.progress-center strong {font-size:1.28rem}
+.progress-count {font-size:.86rem; font-weight:750}
+#scene-progress .progress-ring {width:clamp(41px,12vw,73px); border-radius:50%; background:#fffbef88}
+#scene-progress .progress-track {stroke:#eddab5}
+#scene-progress .progress-value {stroke:#65b35b}
+#scene-progress .progress-center small {display:block; font-size:.59rem; font-weight:700}
+#scene-progress .progress-center strong {font-size:.84rem}
+#scene-progress .progress-count {display:none}
+.scene-actions {bottom:18px; right:8px; display:flex; gap:4px}
+.scene-actions .icon {width:26px; height:26px; padding:0; background:#fff9edb8; color:#796447; border-color:#e7d7b96b}
+.scene-actions .icon[data-manual="true"] {background:#f4e1bd; color:#41311b}
+.nametag,.island-sign {
+  display:flex; align-items:center; gap:.3em; border:0; border-radius:100px;
+  box-shadow:0 2px 5px #53351f21; line-height:1.05; white-space:nowrap; color:#382618; font-weight:800;
+}
+.nametag {pointer-events:auto; padding:.26em .54em; background:#fffdfa; font-size:clamp(11px,3.75vw,16px)}
+.nametag:disabled {opacity:1; pointer-events:none}
+.island-sign {padding:.42em .75em; background:#fff6dbf2; font-size:clamp(12px,3.77vw,18px)}
+.island-sign .glyph {color:#876c35; width:1.37em; height:1.23em}
+.attention-bubble {
+  display:grid; place-items:center; position:relative; width:1.47em; height:1.47em; border-radius:50%;
+  background:linear-gradient(145deg,#ff725f,#cd3532); box-shadow:0 2px 5px #8e272640; color:white;
+  font-size:clamp(16px,5vw,23px); font-weight:900; line-height:1;
+}
+.attention-bubble::after {content:""; position:absolute; top:91%; left:48%; border:.23em solid transparent; border-top-color:#d23b33; transform:rotate(12deg)}
+.analysis-wait span {animation:pulse 1.15s ease-in-out infinite}
+@keyframes pulse {50% {scale:1.1; box-shadow:0 0 0 6px #fff0a958}}
+.sheet {box-shadow:0 -5px 18px #715b4110}
+#island.expanded #world {margin-bottom:calc(66px - var(--world-height)); filter:brightness(.79)}
+#island.expanded #world canvas {transform:translateY(calc(var(--world-height) * -.325))}
+#island.expanded :is(.scene-caption,#scene-progress,.scene-actions,.scene-labels) {visibility:hidden}
+body:has(#island.expanded:not([hidden])) .top-actions {visibility:hidden}
+#island.expanded .sheet {min-height:calc(100svh - 52px); background:#fdfaf3}
+#island.expanded .sheet-handle {height:25px}
+.sheet-heading {display:flex; justify-content:space-between; align-items:flex-start; min-height:98px; margin-bottom:-.35rem}
+.sheet-heading h1 {font-size:clamp(32px,8.7vw,50px); margin-top:.75rem}
+#island.expanded .overview-grid {gap:.95rem}
+#island .overview-grid {grid-template-columns:minmax(0,1fr); gap:.65rem}
+#island .overview-grid h2,.sheet-distribution h3 {font-size:clamp(16px,4.6vw,22px); line-height:1.2}
+.sheet-title-button {display:inline-flex; align-items:center; gap:.28em; padding:0; background:none; border:0; color:inherit; text-align:left; font-weight:inherit}
+.sheet-title-button:hover {color:var(--accent)}
+.today-section {
+  padding:.54rem .65rem .56rem; border:1px solid #d8e2ee; border-radius:12px;
+  background:linear-gradient(115deg,#ecf5fe,#f1f7ff);
+}
+#island:not(.expanded) .today-section h2 {font-size:clamp(13px,3.7vw,18px)}
+.today-section h2 .glyph {color:#2264a4; margin-right:.13em}
+#island .appointment-list,#island .people {margin-top:.3rem}
+.today-appointment {grid-template-columns:minmax(0,1fr) auto; border:0; background:none; box-shadow:none; padding:0; gap:.44rem}
+.appointment-summary {min-width:0}
+.appointment-summary strong {display:block; color:#221e1b; font-size:clamp(13px,3.57vw,17px); line-height:1.35; overflow-wrap:anywhere}
+.appointment-summary small {display:flex; align-items:center; gap:.23em; margin-top:.14rem; font-size:clamp(10px,3vw,15px); font-weight:650; color:#302d29}
+.appointment-summary .glyph {color:#326497}
+.map-button {display:grid; place-items:center; width:37px; height:37px; border-radius:50%; background:#2c72cd; color:#fff; box-shadow:0 2px 4px #2d5a9e3d}
+.map-button .glyph {width:21px; height:21px}
 .expanded .today-section {background:none; border:0; padding:0}
-.expanded .today-appointment {grid-template-columns:auto minmax(0,1fr) auto; background:var(--surface); border:1px solid var(--line); padding:.5rem; box-shadow:0 2px 6px #58402513}
-.expanded .appointment-portrait {display:grid}
-#island .people {gap:0; border:1px solid var(--line); border-radius:13px; overflow:hidden; background:var(--surface)}
-#island .person {border:0; border-radius:0; box-shadow:none; padding:.38rem .4rem; gap:.4rem}
-#island .person + .person {border-top:1px solid var(--line)}
-.portrait {width:39px; height:39px; border-radius:50%; font-size:1.6rem}
-#island .person-status .level {display:none}
-#island.expanded .person-status .level {display:inline-flex; font-size:0; margin-right:.2rem}
-#island .day-badge {display:inline-block; border-radius:8px; background:#f4ca71; color:#472f17; padding:.24rem .38rem; font-size:.75rem; font-weight:750}
-#island .day-urgent {background:#d84b45; color:#fff}
-#island .chat {width:32px; min-height:32px; padding:0; border-radius:8px; color:#fff}
-#island .line {background:#168339}
-#island .ig {background:linear-gradient(35deg,#bd531e,#ce3465 45%,#6436a0)}
-.nav {background:#faf0e3; border-color:#f3e8d8; color:#3d2c1f}
-.nav button {color:#6b5d4d}
-.nav [aria-current=page] {background:transparent; color:#382618; font-weight:750}
-.nav .nav-add {transform:translateY(-11px)}
-.nav .nav-add span[aria-hidden] {width:49px; height:49px; border-radius:50%; font-size:2rem; background:#e75c54; color:#fff; box-shadow:0 4px 8px #7036293b}
-.sr-only {position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
-@media(min-width:760px) {
-  #world {margin-top:0}
-  #island:not(.expanded) .overview-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+.expanded .today-appointment {
+  grid-template-columns:auto minmax(0,.54fr) minmax(0,.46fr); background:var(--surface); border:1px solid #f1ede5;
+  padding:.34rem .65rem; min-height:66px; border-radius:12px; box-shadow:0 3px 6px #59402513;
 }
+.expanded .appointment-portrait {width:49px; height:49px; margin-right:.5rem}
+.expanded .appointment-summary strong {font-size:clamp(19px,5vw,26px); letter-spacing:.025em}
+.expanded .appointment-summary span,.appointment-place {font-size:clamp(13px,3.7vw,18px); line-height:1.2; font-weight:700}
+.appointment-place {text-align:right; overflow-wrap:anywhere}
+.appointment-place:hover {text-decoration:underline}
+#island .people {gap:0; border:1px solid #f0ebe2; border-radius:12px; background:var(--surface)}
+#island .person {grid-template-columns:minmax(0,1fr) auto auto; border:0; box-shadow:none; padding:.2rem .5rem; gap:clamp(.35rem,2.2vw,1.1rem); border-radius:0; background:transparent; min-height:45px}
+#island .person + .person {border-top:1px solid #f1eee6}
+#island .portrait {width:clamp(34px,10.2vw,54px); height:auto; aspect-ratio:1}
+#island .person-main {gap:clamp(.42rem,3vw,1rem)}
+#island .person-main strong {font-size:clamp(.85rem,4vw,1.2rem); line-height:1.2}
+#island .person-main small {font-size:clamp(.64rem,3.1vw,.88rem); line-height:1.35; margin-top:.13em}
+.sheet-level {display:none}
+.person .day-badge {display:inline-block; border-radius:7px; background:#d8a136; color:#fff; padding:.24rem .45rem; font-size:.79rem; font-weight:750; white-space:nowrap}
+.person .day-urgent {background:#d5534b}
+#island .chat-links {flex-wrap:nowrap; gap:clamp(.28rem,2.5vw,1.1rem)}
+#island .chat {width:29px; height:29px; min-height:0; padding:0; border-radius:7px; color:white}
+#island .chat .glyph {width:20px; height:20px}
+#island .line {--line-brand:#1ca24c; background:var(--line-brand)}
+#island .ig {background:radial-gradient(circle at 22% 103%,#ffd567 4%,#f58642 24%,#e43f72 48%,#9341af 72%,#653eb2 100%)}
+#island .disabled {opacity:.78}
+#island.expanded .people {box-shadow:0 3px 7px #59402513}
+#island.expanded .person {grid-template-columns:minmax(0,1fr) auto auto; grid-template-rows:auto auto; column-gap:clamp(.62rem,4vw,1.6rem); row-gap:0; padding:.35rem .62rem; min-height:65px}
+.expanded :is(.person-main,.sheet-level) {grid-row:1 / 3}
+#island.expanded .person-main .portrait {width:clamp(40px,12.4vw,62px)}
+.expanded .sheet-level {display:flex; grid-column:2}
+.expanded .sheet-level .level {font-size:0}
+.expanded .sheet-level .level::before {width:13px; height:13px}
+.expanded .person-status {grid-column:3; justify-self:center}
+.expanded .person-status .day-badge {background:#fceadd; color:#815310}
+.expanded .person-status .day-urgent {background:#fbe8e3; color:#ac3a32}
+#island.expanded .chat-links {grid-column:3; justify-content:center; gap:.32rem}
+#island.expanded .chat {width:19px; height:19px; border-radius:5px}
+#island.expanded .chat .glyph {width:14px; height:14px}
+.sheet-distribution {margin-top:.9rem}
+.distribution-bars {display:grid; grid-template-columns:repeat(5,1fr); gap:4px; text-align:center; margin-top:.47rem}
+.distribution-bars span {display:block; height:7px; border-radius:10px; background:var(--level)}
+.distribution-bars strong {display:block; margin-top:.25em; font-size:.88rem}
+.sheet-moods {margin-top:1.65rem}
 
-.island-sign {display:flex; align-items:center; gap:.35rem}
-.group-icon {position:relative; width:1.12rem; height:.83rem; color:#84622e}
-.group-icon::before {content:""; position:absolute; top:0; left:.38rem; width:.36rem; height:.36rem; border-radius:50%; background:currentColor; box-shadow:-.34rem .11rem 0 -.035rem currentColor,.34rem .11rem 0 -.035rem currentColor}
-.group-icon::after {content:""; position:absolute; bottom:0; left:.29rem; width:.54rem; height:.39rem; border-radius:.45rem .45rem .15rem .15rem; background:currentColor; box-shadow:-.37rem .04rem 0 -.04rem currentColor,.37rem .04rem 0 -.04rem currentColor}
+.nav {
+  display:grid; grid-template-columns:repeat(5,1fr); position:fixed; left:50%; bottom:0; transform:translateX(-50%);
+  width:min(calc(100% - 8px),710px); padding:.22rem .35rem calc(.38rem + env(safe-area-inset-bottom)); z-index:6;
+  background:linear-gradient(150deg,#f9efe0,#fff6eb); border:1px solid #f5ebdd; border-bottom:0; border-radius:20px 20px 0 0;
+  box-shadow:0 -3px 15px #5e482c08;
+}
+.nav button {
+  display:grid; place-content:center; justify-items:center; gap:.1rem; min-height:56px; padding:0;
+  background:none; border:0; border-radius:10px; color:#736655; font-size:clamp(.78rem,3.35vw,.99rem);
+}
+.nav .glyph {width:clamp(23px,6.7vw,39px); height:clamp(23px,6.7vw,39px)}
+.nav .glyph-island {width:clamp(40px,10vw,60px); height:clamp(31px,8vw,46px)}
+.nav [aria-current=page] {color:#322317; font-weight:800}
+.nav .nav-add {
+  place-self:start center; min-height:0; width:52px; height:52px; margin-top:-16px; border-radius:50%;
+  color:#fff; background:linear-gradient(145deg,#f8786b,#de534c); box-shadow:0 4px 9px #93483a43;
+}
+.nav-add .glyph {width:29px; height:29px}
+.sr-only {position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+@media(min-width:560px) {
+  .sheet {padding-inline:1.5rem}
+  #island:not(.expanded) .overview-grid {grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}
+  #island:not(.expanded) .today-section {align-self:start}
+  #island.expanded .sheet-heading {min-height:96px}
+  .sheet-heading .progress-ring {width:88px}
+  #island .chat {width:33px; height:33px}
+}

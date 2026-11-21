@@ -18,7 +18,7 @@ export default defineConfig({
   plugins: [VitePWA({
     injectRegister: false,
     registerType: 'autoUpdate',
-    includeAssets: ['icon.svg', 'notification.js'],
+    includeAssets: ['icon.svg', 'notification.js', 'avatars/*.png'],
     manifest: {
       name: 'Shepherdiland 我的回訪',
       short_name: '我的回訪',

@@ -1,0 +1,18 @@
+const paths = {
+  people: '<circle cx="12" cy="7" r="3.3"/><circle cx="4.7" cy="8.5" r="2.5"/><circle cx="19.3" cy="8.5" r="2.5"/><path d="M6 21v-3.1a6 6 0 0 1 12 0V21zM1 20v-2.3a4.2 4.2 0 0 1 5.3-4.1A8 8 0 0 0 4.5 20zm18.5 0a8 8 0 0 0-1.8-6.4 4.2 4.2 0 0 1 5.3 4.1V20z"/>',
+  calendar: '<path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h1V3a1 1 0 0 1 1-1zm13 8H4v9a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1z"/><circle cx="8" cy="13" r="1.25"/><circle cx="12" cy="13" r="1.25"/><circle cx="16" cy="13" r="1.25"/><circle cx="8" cy="17" r="1.25"/><circle cx="12" cy="17" r="1.25"/><circle cx="16" cy="17" r="1.25"/>',
+  stats: '<rect x="3" y="12" width="4.5" height="10" rx="1.3"/><rect x="9.75" y="3" width="4.5" height="19" rx="1.3"/><rect x="16.5" y="8" width="4.5" height="14" rx="1.3"/>',
+  add: '<path d="M12 4v16M4 12h16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>',
+  pin: '<path fill-rule="evenodd" d="M12 2a8 8 0 0 0-8 8c0 5.3 8 12 8 12s8-6.7 8-12a8 8 0 0 0-8-8zm0 4.6a3.1 3.1 0 1 1 0 6.2 3.1 3.1 0 0 1 0-6.2z"/>',
+  navigate: '<path d="m20.8 3.1-17 7.1c-1.3.5-1.1 2.4.3 2.6l6.4 1 1.2 6.4c.3 1.4 2.1 1.5 2.6.2l7.5-16.1c.3-.7-.4-1.5-1-1.2z"/>',
+  arrow: '<path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  reset: '<path d="M5 11a7.2 7.2 0 1 1 2 6.5M5 5v6h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+  period: '<circle cx="12" cy="12" r="7.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 4.4a7.6 7.6 0 0 1 0 15.2z"/>',
+  line: '<path d="M12 2.7c-5.6 0-10 3.6-10 8 0 4 3.4 7.3 8.2 7.9.5.1.9.1.8.8l-.2 1.5c-.1.6.3.8.8.5 2.9-1.4 10.4-6 10.4-10.7 0-4.4-4.4-8-10-8z"/><path d="M5.7 9v3h2m1.8-3v3m1.9 0V9l2.4 3V9m4.1 0h-2v3h2m-1.9-1.5h1.6" fill="none" stroke="var(--line-brand,#14ad52)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>',
+  ig: '<g fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3.5" y="3.5" width="17" height="17" rx="4.7"/><circle cx="12" cy="12" r="3.8"/></g><circle cx="17.4" cy="6.8" r="1.1"/>',
+  island: '<path fill="#815837" d="m1 15 5-4 13 1 4 3-1 4-7 3-9-2-4-2z"/><path fill="#cc9950" d="m1 15 6-4 10-1 6 5-3 3-7 2-8-2z"/><path fill="#859139" d="m4 12 5-9 6-2 5 5 1 8-3 3-10-1z"/><path fill="#59652b" d="m4 12 6-1 4 5-6 1zm10 4 3-6 3-4 1 8-3 3z"/><path fill="#b0af56" d="m9 3 6-2 2 9-7 1-4-4z"/><path fill="#788139" d="M19 18c0-3 2-5 5-5 0 2-2 4-5 5m0 0c2-1 4 0 5 1-2 1-4 1-5-1"/>',
+  sprig: '<path d="M34 35C23 31 14 24 9 11m17 20c-5-6-8-13-8-21" fill="none" stroke="#736143" stroke-width="1.2" stroke-linecap="round"/><path fill="#9caa58" d="M18 16c-5-9 0-13 5-16 2 8 0 13-5 16zm-5 6C5 22 1 18 0 14c7-1 11 1 13 8zm5 6c-5-3-9-1-13 3 6 4 10 2 13-3zm8 2c-5-6-1-11 3-13 2 6 1 10-3 13zm-6-9c1-8 6-9 10-9 0 5-4 9-10 9z"/><path fill="#d9b77c" d="M12 17C5 14 5 8 6 5c6 3 8 6 6 12"/><path d="M18 15 22 3m-10 18L3 16m14 12-9 3m18-3 2-9" fill="none" stroke="#6f7b43" stroke-width=".55"/>',
+  bell: '<path fill="#9c6825" d="M10 20a2 2 0 1 0 4 0z"/><path fill="#d79b36" d="M12 2a2 2 0 0 1 2 2.1c3 .9 4.2 3.7 4.2 7.2 0 2.7.7 4.7 2 5.8.9.8.5 2-1 2H4.8c-1.5 0-1.9-1.2-1-2 1.3-1.1 2-3.1 2-5.8 0-3.5 1.2-6.3 4.2-7.2A2 2 0 0 1 12 2"/><path fill="#f4c665" d="M12 5c-2 0-4 1.8-4 5.8 0 3-.6 5-1.8 6.6h10.5c-1-1.9-1.4-4-1.4-6.6C15.3 7 14 5 12 5"/>',
+}
+
+export const icon = (name: keyof typeof paths) => `<svg class="glyph glyph-${name}" viewBox="${name === 'sprig' ? '0 0 36 36' : '0 0 24 24'}" aria-hidden="true" fill="currentColor">${paths[name]}</svg>`
