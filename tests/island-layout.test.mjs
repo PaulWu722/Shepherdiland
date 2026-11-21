@@ -9,7 +9,7 @@ test('avatars occupy separate walking lanes as island occupancy grows', () => {
     for (const [i, a] of slots.entries()) {
       if (count <= 6) {
         const ratio = a.height * Math.cos(35 * Math.PI / 180) / islandWidth
-        assert.ok(ratio >= .22 && ratio <= .25)
+        assert.ok(ratio >= .11 && ratio <= .125)
       }
       for (const b of slots.slice(i + 1)) {
         const dx = Math.max(0, Math.abs(a.x - b.x) - a.walk - b.walk)

@@ -1,7 +1,7 @@
 import { islandWidth } from './island-model.ts'
 
-// Orthographic foreshortening at 35 degrees makes this about 24% on screen.
-const standingHeight = islandWidth * .288
+// Orthographic foreshortening at 35 degrees makes this about 12% on screen.
+const standingHeight = islandWidth * .144
 
 export function islandSlot(index: number, count: number, compact: boolean) {
   if (compact) return { x: 0, z: 0, height: standingHeight, walk: .27, nameWidth: 3.2 }
