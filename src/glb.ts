@@ -71,7 +71,26 @@ export function loadModel(file: string, directory: URL, low = false) {
       }
     })
     if (!materials.size) return
-    if (low) for (const material of materials) simplifyMaterial(material)
+    const character = file.startsWith('char_')
+    scene.traverse(object => {
+      if (!(object instanceof T.Mesh)) return
+      object.castShadow = true
+      object.receiveShadow = !character
+    })
+    for (const material of materials) {
+      if (low) simplifyMaterial(material)
+      if (!(material instanceof T.MeshStandardMaterial)) continue
+      // Tripo exports metallic/dark PBR maps; the reference is matte clay with bright faces.
+      material.metalness = 0
+      material.metalnessMap = null
+      material.roughness = character ? .72 : .9
+      if (character && material.map) {
+        material.emissive.set('#ffffff')
+        material.emissiveMap = material.map
+        material.emissiveIntensity = .22
+      }
+      material.needsUpdate = true
+    }
     return scene
   })().catch(() => undefined).then(model => {
     if (!model) models.delete(key)

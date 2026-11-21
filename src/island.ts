@@ -32,7 +32,9 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
   const modelDirectory = new URL('models/', new URL(import.meta.env.BASE_URL, document.baseURI))
   renderer.setPixelRatio(Math.min(devicePixelRatio, low ? 1 : 1.85))
   renderer.toneMapping = T.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.03
+  renderer.toneMappingExposure = 1.12
+  renderer.shadowMap.enabled = !low
+  renderer.shadowMap.type = T.PCFSoftShadowMap
   const labels = new CSS2DRenderer()
   labels.domElement.className = 'scene-labels'
   host.prepend(renderer.domElement, labels.domElement)
@@ -67,9 +69,15 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
     camera.bottom = mid - h * units / 2
     camera.updateProjectionMatrix()
   }
-  const sun = new T.DirectionalLight('#fff0d2', 2.43)
+  const sun = new T.DirectionalLight('#fff0d2', 3.3)
   sun.position.set(-8, 16, 7)
-  scene.add(sun, new T.HemisphereLight('#fffbef', '#a8865b', 1.40), new T.AmbientLight('#fff1de', .29))
+  sun.castShadow = !low
+  sun.shadow.mapSize.set(2048, 2048)
+  Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8, near: 1, far: 50 })
+  sun.shadow.bias = -.0004
+  sun.shadow.normalBias = .03
+  sun.shadow.radius = 5
+  scene.add(sun, new T.HemisphereLight('#fffbef', '#a8865b', .95), new T.AmbientLight('#fff1de', .18))
   const texture = shadowTexture()
   let disposed = false
   const requests: (() => void)[] = [], upgrades: (() => void)[] = []
@@ -226,7 +234,7 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
     sky.lerp(skyColors[period], .022)
     fog.color.copy(sky)
     fog.density = period === 0 ? .020 : .0175
-    sun.intensity += ((period === 3 ? 1.25 : 2.43) - sun.intensity) * .025
+    sun.intensity += ((period === 3 ? 1.6 : 3.3) - sun.intensity) * .025
     const date = new Date()
     const hour = override === null ? date.getHours() + date.getMinutes() / 60 : [7, 12, 17.5, 22][period]
     const arc = (hour - (period === 3 ? 18 : 5)) / 14 * Math.PI
