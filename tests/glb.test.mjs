@@ -51,6 +51,7 @@ test('missing, truncated and unavailable GLBs leave fallback active and a retry 
   for (let i = 0; i < 3; i++) assert.equal(await loadModel('island_top', directory), undefined)
   const first = loadModel('island_top', directory)
   assert.equal(loadModel('island_top', directory), first)
+  assert.equal(loadModel('island_top', directory, true), first)
   const template = await first
   assert.ok(template instanceof T.Group)
   const mesh = template.clone().getObjectByProperty('type', 'Mesh')

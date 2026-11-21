@@ -7,13 +7,15 @@ import { icon } from './icons'
 import { avatar } from './character'
 import { cloud, distantIsland, dressIsland, shadowTexture } from './scenery'
 import { characterFile, loadModel, release } from './glb'
-import { islandSurface, islandWidth } from './island-model'
+import { islandSurface } from './island-model'
+import { animationPreview, islandSlot } from './island-layout'
 
 export type IslandMember = { contact: Contact; mood: number; linked: boolean; count: number }
 const palette = ['#fff0d8', '#fff0d9', '#fbe1cb', '#edddce']
 const platforms = [{ y: 2.12, z: -2.7, scale: .92 }, { y: -.67, z: .95, scale: 1 }]
 const detailPlatform = { y: 0, z: 0, scale: .65 }
 const elevation = 35 * Math.PI / 180
+const preview = animationPreview(new URLSearchParams(import.meta.env.DEV ? location.search : ''))
 export const periods = ['晨光', '白日', '黃昏', '夜晚']
 
 export function localPeriod() {
@@ -48,13 +50,14 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
   controls.maxZoom = 2.7
   controls.touches.TWO = T.TOUCH.DOLLY_PAN
   const offset = new T.Vector3(0, Math.sin(elevation), Math.cos(elevation)).multiplyScalar(26)
+  let units = 1
   const reset = () => {
     const w = host.clientWidth, h = host.clientHeight
     if (!w || !h) return
     controls.target.set(0, 0, 0)
     camera.position.copy(offset)
     controls.update()
-    const units = compact ? Math.max(6.7 / w, 6.0 / h) : Math.max(10.65 / w, 10.0 / h)
+    units = compact ? Math.max(6.7 / w, 6.0 / h) : Math.max(10.65 / w, 10.0 / h)
     const upper = platforms[0]
     const mid = compact ? -.21 : upper.y * Math.cos(elevation) - upper.z * Math.sin(elevation) - h * units * .018
     camera.zoom = 1
@@ -69,6 +72,14 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
   scene.add(sun, new T.HemisphereLight('#fffbef', '#a8865b', 1.40), new T.AmbientLight('#fff1de', .29))
   const texture = shadowTexture()
   let disposed = false
+  const requests: (() => void)[] = [], upgrades: (() => void)[] = []
+  function requestModel(file: string, upgrade: (source: T.Group) => void) {
+    requests.push(() => {
+      void loadModel(file, modelDirectory, low).then(source => {
+        if (!disposed && source) upgrades.push(() => upgrade(source))
+      })
+    })
+  }
   const islands = (compact ? [detailPlatform] : platforms).map((platform, i) => {
     const group = new T.Group()
     const fallback = new T.Group()
@@ -88,8 +99,7 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
     }
     const { fire, lamp } = dressIsland(fallback, low, i === 1, texture)
     const island = { platform, fire, lamp, surface: undefined as ReturnType<typeof islandSurface> }
-    void loadModel(i === 0 ? 'island_top' : 'island_bottom', modelDirectory, low).then(source => {
-      if (disposed || !source) return
+    requestModel(i === 0 ? 'island_top' : 'island_bottom', source => {
       const surface = islandSurface(source)
       if (!surface) return
       group.add(surface.object.clone(), fire, lamp)
@@ -102,7 +112,7 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
       }
       if (label) label.position.z *= surface.zScale
       island.surface = surface
-    }).catch(() => {})
+    })
     return island
   })
   if (!compact) {
@@ -127,8 +137,8 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
   scene.add(stars)
   const avatars = new Map<string, ReturnType<typeof avatar>>()
   const lookKey = (contact: Contact) => [contact.hair, contact.shirt, demoLook(contact)?.avatar].join('/')
-  let groupCounts = [0, 0]
-  let members: IslandMember[] = [], preferences: Settings | undefined, override: number | null = null
+  let members: (IslandMember & { slot: ReturnType<typeof islandSlot> })[] = []
+  let preferences: Settings | undefined, override: number | null = null
   let frame = 0
   let focus: { member: string; start: number; position: T.Vector3; target: T.Vector3; point: T.Vector3; end: T.Vector3; zoom: number } | null = null
   function select(member: string) {
@@ -138,7 +148,7 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
     if (model.attention) model.celebrating = start
     const screenCenter = (camera.top + camera.bottom) / 2
     const up = new T.Vector3(0, 1, 0).applyQuaternion(camera.quaternion)
-    const point = model.root.position.clone().add(new T.Vector3(0, model.height * .49, 0)).addScaledVector(up, -screenCenter)
+    const point = model.root.position.clone().add(new T.Vector3(0, model.root.scale.y * .49, 0)).addScaledVector(up, -screenCenter)
     focus = { member, start, zoom: camera.zoom, target: controls.target.clone(), position: camera.position.clone(), point, end: camera.position.clone().sub(controls.target).add(point) }
     controls.enabled = false
   }
@@ -151,26 +161,64 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
     const hit = ray.intersectObjects([...avatars.values()].map(value => value.root), true)[0]?.object
     hit?.traverseAncestors(object => { const member = object.userData.member; if (member) select(member) })
   }
-  const observer = new ResizeObserver(() => {
+  function resize() {
     const w = host.clientWidth, h = host.clientHeight
     if (!w || !h) return
     renderer.setSize(w, h)
     labels.setSize(w, h)
     if (!focus) reset()
-  })
+  }
+  const observer = new ResizeObserver(resize)
   observer.observe(host)
+  const tagSizes = new WeakMap<Element, ResizeObserverSize>()
+  const tagObserver = new ResizeObserver(entries => {
+    for (const entry of entries) {
+      const size = entry.borderBoxSize[0]
+      if (size) tagSizes.set(entry.target, size)
+    }
+  })
   let inView = true
   const visibility = new IntersectionObserver(([entry]) => { inView = entry.isIntersecting })
   visibility.observe(host)
   const clockStart = performance.now()
-  let lastFrame = clockStart
+  let lastFrame = 0
   const skyColors = palette.map(value => new T.Color(value))
   const lightPosition = new T.Vector3()
+  const anchor = new T.Vector3()
+  function separateNames() {
+    if (members.length < 2) return
+    const { width, height } = labels.getSize()
+    const boxes = members.map(({ contact }) => {
+      const model = avatars.get(contact.id)!
+      const point = model.label.getWorldPosition(anchor).project(camera)
+      const size = tagSizes.get(model.tag)
+      const x = (point.x + 1) * width / 2, bottom = (1 - point.y) * height / 2
+      const half = (size?.inlineSize || Number.parseFloat(model.tag.style.maxWidth)) / 2
+      return { model, left: x - half, right: x + half, bottom, height: size?.blockSize || 26 }
+    }).sort((a, b) => b.bottom - a.bottom)
+    const placed: typeof boxes = []
+    for (const box of boxes) {
+      const ideal = box.bottom
+      for (const other of placed) {
+        const top = other.bottom - other.height
+        if (box.left < other.right + 2 && box.right > other.left - 2 &&
+            box.bottom > top - 2 && box.bottom - box.height < other.bottom + 2) box.bottom = top - 2
+      }
+      box.model.label.position.y += (ideal - box.bottom) * units / (camera.zoom * Math.cos(elevation) * box.model.root.scale.y)
+      const before = placed.findIndex(other => other.bottom < box.bottom)
+      placed.splice(before < 0 ? placed.length : before, 0, box)
+    }
+  }
   function animate(now: number) {
     frame = requestAnimationFrame(animate)
     if (!host.clientWidth || document.hidden || (!inView && !focus)) return
-    if (low && now - lastFrame < 31) return
-    const dt = Math.min(.05, (now - lastFrame) / 1000)
+    if (lastFrame && low && now - lastFrame < 31) return
+    if (lastFrame) {
+      // Start downloads after painting the fallback, and spread model swaps across frames.
+      for (const request of requests.splice(0)) request()
+      try { upgrades.shift()?.() } catch { /* Keep the fallback for an invalid model. */ }
+    } else resize()
+    const dt = Math.max(0, Math.min(.05, (now - (lastFrame || clockStart)) / 1000))
     lastFrame = now
     const t = (now - clockStart) / 1000
     const period = override ?? localPeriod()
@@ -206,11 +254,13 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
       }
     }
     controls.update()
-    const slots = [0, 0]
-    members.forEach(({ contact, mood, linked }, i) => {
+    const facing = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z)
+    members.forEach(({ contact, mood: actualMood, linked, slot }, i) => {
       const model = avatars.get(contact.id)!
-      if (model.mood !== -1 && mood === 0 && model.mood !== 0) model.celebrating = now
-      if (model.mood !== -1 && linked !== model.linked) {
+      const firstPose = model.mood === -1
+      const mood = preview.mood ?? actualMood
+      if (!firstPose && mood === 0 && model.mood !== 0) model.celebrating = now
+      if (!firstPose && linked !== model.linked) {
         model.from.copy(model.root.position)
         model.jumping = now
         if (linked) model.celebrating = now
@@ -218,34 +268,31 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
       model.mood = mood
       model.linked = linked
       const phase = t + i * 5.73
-      const cycle = (mood === 1 ? 15 : 8) / (preferences?.pace || 1)
-      const attention = Boolean(mood && preferences?.attention && phase % cycle > cycle - Math.min(3.6, cycle * .47))
+      const pace = preferences?.pace || 1
+      const cycle = (mood === 1 ? 15 : 8) / pace
+      const attention = preview.attention || Boolean(preview.mood === null && mood && preferences?.attention && phase % cycle > cycle - Math.min(3.6, cycle * .47))
       model.attention = attention
-      const speed = mood === 0 ? .56 : mood === 1 ? .29 : .15
-      const angle = i * 2.39996 + phase * speed
-      const groupIndex = linked ? 0 : 1
-      const { platform, surface } = islands[compact ? 0 : groupIndex]
-      const slot = slots[groupIndex]++
-      const columns = Math.min(4, groupCounts[groupIndex])
-      const column = slot % columns
-      const row = Math.floor(slot / columns)
-      const spacing = columns === 2 ? 2.72 : 5.15 / Math.max(3, columns - 1)
-      const lane = (column - (columns - 1) / 2) * spacing
-      const sitting = !attention && (mood === 3 || (period === 3 && phase % 9 < 6) || (mood === 2 && phase % 8 < 2.5))
-      const restingAtFire = sitting && period === 3 && mood !== 3 && row === 0
-      const orbit = sitting ? i * 2.4 : angle
+      const { platform, surface } = islands[compact || linked ? 0 : 1]
+      const sitting = !attention && (mood === 3 || (preview.mood === null && ((period === 3 && phase % 9 < 6) || (mood === 2 && phase % 8 < 2.5))))
       const gestureIndex = (i + Math.floor(phase / cycle)) % 4
-      const approaching = attention && !compact && (gestureIndex === 1 || (mood === 2 && gestureIndex === 3)) && row === 0
-      const walk = mood === 0 ? .31 : .22
-      const localX = compact ? Math.sin(orbit) : lane + Math.sin(orbit) * walk
-      const depth = compact ? Math.cos(orbit) * .6 : -.73 + Math.cos(orbit) * walk * 1.15 + (column % 2 - .5) * .64 + (row % 3) * .66
-      const localZ = restingAtFire ? -1 + Math.cos(orbit) * .26 : depth + (approaching ? .86 : 0)
-      const x = localX * (surface?.xScale ?? 1) * platform.scale
-      const z = platform.z + localZ * (surface?.zScale ?? 1) * platform.scale
       const jump = model.jumping ? Math.min(1, (now - model.jumping) / 1150) : 1
       const celebration = model.celebrating ? Math.min(1, (now - model.celebrating) / 880) : 1
+      const waving = attention || celebration < 1 || (mood === 0 && (phase % 11 < 2 || (period === 0 && phase % 17 < 2)))
+      const stroll = t > 2 && !sitting && !waving && jump === 1 && preview.mood === null
+      const walkCycle = phase * pace / (mood === 0 ? 9 : 13)
+      const step = T.MathUtils.smoothstep(walkCycle % 1, .38, .59)
+      const direction = Math.floor(walkCycle) % 2 ? -1 : 1
+      const walking = stroll && step > 0 && step < 1
+      const offset = stroll ? (step * 2 - 1) * direction * slot.walk : 0
+      const localX = slot.x + offset
+      const localZ = slot.z + offset * .4 + (attention && gestureIndex === 1 ? slot.walk * .55 : 0)
+      const x = localX * (surface?.xScale ?? 1) * platform.scale
+      const z = platform.z + localZ * (surface?.zScale ?? 1) * platform.scale
+      model.root.scale.setScalar(slot.height * platform.scale)
+      const nameWidth = `${Math.max(1, Math.floor(slot.nameWidth * platform.scale * (surface?.xScale ?? 1) / units * camera.zoom))}px`
+      if (model.tag.style.maxWidth !== nameWidth) model.tag.style.maxWidth = nameWidth
       const follow = 1 - Math.pow(.935, dt * 60)
-      if (model.root.position.lengthSq() === 0) model.root.position.set(x, platform.y + .047, z)
+      if (firstPose) model.root.position.set(x, platform.y + .047, z)
       model.root.position.x = jump < 1 ? T.MathUtils.lerp(model.from.x, x, jump) : T.MathUtils.lerp(model.root.position.x, x, follow)
       model.root.position.z = jump < 1 ? T.MathUtils.lerp(model.from.z, z, jump) : T.MathUtils.lerp(model.root.position.z, z, follow)
       const floorX = (jump < 1 ? x : model.root.position.x) / platform.scale
@@ -255,18 +302,18 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
       const arcHeight = jump < 1 ? T.MathUtils.lerp(model.from.y, ground, jump) + Math.sin(jump * Math.PI) * 1.7 : ground
       model.root.position.y = arcHeight + Math.sin(celebration * Math.PI) * .46 + hop
       model.shadow.position.set(model.root.position.x + (period === 2 ? .21 : .10), ground + .036, model.root.position.z + .095)
-      model.shadow.scale.set(period === 2 ? 1.48 : 1, 1, 1)
+      const shadeScale = model.root.scale.y / 2.5
+      model.shadow.scale.set((period === 2 ? 1.48 : 1) * shadeScale, shadeScale, 1)
       model.shadow.material.opacity = jump < 1 ? 0 : (period === 3 ? .26 : .36) / (1 + model.root.position.y - ground)
-      const facing = Math.atan2(camera.position.x - model.root.position.x, camera.position.z - model.root.position.z)
-      const turn = mood === 0 && phase % 19 < 1.1 ? (phase % 19) / 1.1 * Math.PI * 2 : 0
-      const yaw = facing + (attention ? 0 : .22 * Math.sin(orbit) + turn)
-      model.root.rotation.y += Math.atan2(Math.sin(yaw - model.root.rotation.y), Math.cos(yaw - model.root.rotation.y)) * .15
-      model.body.position.y = T.MathUtils.lerp(model.body.position.y, sitting ? -.22 : 0, .12)
-      model.body.rotation.x = T.MathUtils.lerp(model.body.rotation.x, mood >= 2 && !attention ? .24 : 0, .1)
+      const yaw = walking ? Math.atan2(direction * (surface?.xScale ?? 1), direction * .4 * (surface?.zScale ?? 1))
+        : facing + (attention ? 0 : .22 * Math.sin(phase * .5))
+      const turn = Math.atan2(Math.sin(yaw - model.root.rotation.y), Math.cos(yaw - model.root.rotation.y))
+      model.root.rotation.y += turn * (firstPose ? 1 : 1 - Math.pow(.77, dt * 60))
+      model.body.position.y = T.MathUtils.lerp(model.body.position.y, sitting ? -.22 : 0, firstPose ? 1 : .12)
+      model.body.rotation.x = T.MathUtils.lerp(model.body.rotation.x, mood >= 2 && !attention ? .12 : 0, .1)
       model.head.rotation.y = mood === 1 && !attention ? Math.sin(phase * 1.5) * .22 : 0
-      model.head.rotation.x = mood >= 2 && !attention ? .14 : -.06
-      const stride = Math.sin(phase * (mood ? 4 : 8)) * (mood ? .23 : .48)
-      const waving = attention || celebration < 1 || (mood === 0 && (phase % 11 < 2 || (period === 0 && phase % 17 < 2)))
+      model.head.rotation.x = mood >= 2 && !attention ? .10 : -.1
+      const stride = walking ? Math.sin(phase * 9 * pace) * (mood ? .26 : .41) : 0
       model.arms.forEach((arm, side) => {
         const thumb = side ? 1 : -1
         const gesture = gestureIndex === 2 && attention ? thumb * (side ? 1.97 : .48) : thumb * (1.13 + Math.sin(phase * 11) * .25)
@@ -279,16 +326,12 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
           model.face.eyes[side].scale.y = period === 3 && sitting ? .24 : 1
         }
       })
-      if (model.applyRig) {
-        model.height = islandWidth * platform.scale * .18
-        model.root.scale.setScalar(model.height)
-        model.applyRig()
-      }
+      model.applyRig?.()
+      model.label.position.y = 1.08 + model.body.position.y * .42
       if (model.face) {
         model.face.smile.visible = mood !== 1
         model.face.smile.rotation.z = mood >= 2 && !attention ? 0 : Math.PI
         model.face.mouth.visible = mood === 1
-        model.label.position.y = sitting ? 1.96 : 2.19
         for (const material of model.face.materials) {
           material.opacity = T.MathUtils.lerp(material.opacity, mood === 3 && !attention ? .83 : 1, .1)
           material.transparent = material.opacity < .995
@@ -299,12 +342,10 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
       model.cloud.visible = model.cloud.scale.x > .025
       model.cloud.rotation.z = attention ? Math.sin(phase * 10) * .22 : 0
       model.rain.forEach((drop, index) => { drop.visible = mood === 2; drop.position.y = -.12 - ((t * 1.25 + index * .15) % .54) })
-      model.tag.title = [contact.school, contact.department, levels[contact.openness - 1]].filter(Boolean).join('・')
-      if (model.tag.textContent !== contact.name) model.tag.textContent = contact.name
       model.alert.visible = attention
-      model.tag.disabled = compact
     })
     renderer.render(scene, camera)
+    separateNames()
     labels.render(scene, camera)
   }
   frame = requestAnimationFrame(animate)
@@ -313,28 +354,44 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
     period(value: number | null) { override = value },
     update(rows: IslandMember[], settings: Settings) {
       const order = new Map(rows.map(({ contact }) => [contact.id, demoLook(contact)?.islandOrder ?? 6]))
-      members = [...rows].sort((a, b) => order.get(a.contact.id)! - order.get(b.contact.id)!)
+      const linkedCount = rows.filter(row => row.linked).length
+      const counts = [linkedCount, rows.length - linkedCount], slots = [0, 0]
+      members = [...rows].sort((a, b) => order.get(a.contact.id)! - order.get(b.contact.id)!).map(row => {
+        const group = row.linked ? 0 : 1
+        return { ...row, slot: islandSlot(slots[group]++, counts[group], compact) }
+      })
       preferences = settings
-      groupCounts = [rows.filter(row => row.linked).length, rows.filter(row => !row.linked).length]
       for (const [key, model] of avatars) if (!rows.some(row => row.contact.id === key)) {
+        tagObserver.unobserve(model.tag)
         scene.remove(model.root, model.shadow); release(model.root); release(model.shadow); model.tag.remove(); model.alert.element.remove(); avatars.delete(key)
       }
       rows.forEach(({ contact }) => {
-        const existing = avatars.get(contact.id)
-        if (existing && existing.root.userData.look === lookKey(contact)) return
-        if (existing) { scene.remove(existing.root, existing.shadow); release(existing.root); release(existing.shadow); existing.tag.remove(); existing.alert.element.remove() }
-        const model = avatar(contact, scene, texture, low)
-        model.root.userData = { member: contact.id, look: lookKey(contact) }
-        model.tag.onclick = () => select(contact.id)
-        avatars.set(contact.id, model)
-        void loadModel(characterFile(contact), modelDirectory, low).then(source => {
-          if (!disposed && source && avatars.get(contact.id) === model) model.upgrade(source)
-        }).catch(() => {})
+        const look = lookKey(contact)
+        let model = avatars.get(contact.id)
+        if (!model || model.root.userData.look !== look) {
+          if (model) {
+            tagObserver.unobserve(model.tag)
+            scene.remove(model.root, model.shadow); release(model.root); release(model.shadow); model.tag.remove(); model.alert.element.remove()
+          }
+          const replacement = avatar(contact, scene, texture, low)
+          replacement.root.userData = { member: contact.id, look }
+          replacement.tag.onclick = () => select(contact.id)
+          replacement.tag.disabled = compact
+          tagObserver.observe(replacement.tag)
+          avatars.set(contact.id, replacement)
+          requestModel(characterFile(contact), source => {
+            if (avatars.get(contact.id) === replacement) replacement.upgrade(source)
+          })
+          model = replacement
+        }
+        model.tag.title = [contact.name, contact.school, contact.department, levels[contact.openness - 1]].filter(Boolean).join('・')
+        if (model.tag.textContent !== contact.name) model.tag.textContent = contact.name
       })
     },
     dispose() {
       disposed = true
-      cancelAnimationFrame(frame); observer.disconnect(); visibility.disconnect(); controls.dispose(); release(scene); texture.dispose(); renderer.dispose()
+      requests.length = upgrades.length = 0
+      cancelAnimationFrame(frame); observer.disconnect(); tagObserver.disconnect(); visibility.disconnect(); controls.dispose(); release(scene); texture.dispose(); renderer.dispose()
       renderer.domElement.remove(); labels.domElement.remove()
     },
   }

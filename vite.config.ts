@@ -8,7 +8,7 @@ export default defineConfig({
         codeSplitting: {
           groups: [
             { name: 'three-core', test: /[\/]three[\/]build[\/]three\.core\.js$/ },
-            { name: 'three-renderer', test: /[\/]three[\/]/ },
+            { name: 'three-renderer', test: /[\/]three[\/](?!examples[\/]jsm[\/]loaders[\/]GLTFLoader\.js$)/ },
             { name: 'supabase', test: /[\/]@supabase[\/]/ },
           ],
         },

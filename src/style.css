@@ -185,7 +185,7 @@ body:has(#workspace:not([hidden]) #island:not([hidden])) .settings-button {
   display:flex; align-items:center; gap:.3em; border:0; border-radius:100px;
   box-shadow:0 2px 5px #53351f21; line-height:1.05; white-space:nowrap; color:#382618; font-weight:800;
 }
-.nametag {pointer-events:auto; padding:.26em .54em; background:#fffdfa; font-size:clamp(11px,3.75vw,16px)}
+.nametag {display:block; overflow:hidden; text-overflow:ellipsis; pointer-events:auto; padding:.26em .54em; background:#fffdfa; font-size:clamp(11px,3.75vw,16px)}
 .nametag:disabled {opacity:1; pointer-events:none}
 .island-sign {padding:.42em .75em; background:#fff6dbf2; font-size:clamp(12px,3.77vw,18px)}
 .island-sign .glyph {color:#876c35; width:1.37em; height:1.23em}

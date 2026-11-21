@@ -121,11 +121,17 @@ function proceduralCharacter(contact: Contact, low: boolean) {
 export function avatar(contact: Contact, scene: T.Scene, texture: T.Texture, low: boolean) {
   const root = new T.Group()
   const { body, head, arms, legs, tears, ...face } = proceduralCharacter(contact, low)
-  root.add(body)
-  root.scale.setScalar(1.1)
+  const fallback = new T.Group()
+  const { min, max } = new T.Box3().setFromObject(body)
+  const height = max.y - min.y
+  fallback.scale.setScalar(1 / height)
+  fallback.position.y = -min.y / height
+  fallback.add(body)
+  root.add(fallback)
 
   const weather = new T.Group(), cloud = new T.Group()
-  weather.position.y = 1.84
+  weather.position.set(.24, 1.035, .035)
+  weather.scale.setScalar(.62)
   root.add(weather)
   weather.add(cloud)
   const ball = spheres(low)
@@ -139,7 +145,8 @@ export function avatar(contact: Contact, scene: T.Scene, texture: T.Texture, low
   tag.type = 'button'
   tag.textContent = contact.name
   const label = new CSS2DObject(tag)
-  label.position.y = 1.93
+  label.center.y = 1
+  label.position.y = 1.08
   root.add(label)
 
   const bubble = document.createElement('span')
@@ -147,7 +154,7 @@ export function avatar(contact: Contact, scene: T.Scene, texture: T.Texture, low
   bubble.textContent = '!!'
   bubble.setAttribute('aria-hidden', 'true')
   const alert = new CSS2DObject(bubble)
-  alert.position.set(.75, 1.43, .035)
+  alert.position.set(.47, .84, .035)
   alert.visible = false
   root.add(alert)
   scene.add(root)
@@ -157,27 +164,24 @@ export function avatar(contact: Contact, scene: T.Scene, texture: T.Texture, low
   const pose = { body, head, arms, legs }
   const model = {
     ...pose, root, face: face as typeof face | undefined, tears,
-    applyRig: undefined as (() => void) | undefined, height: 1.94,
+    applyRig: undefined as (() => void) | undefined,
     shadow: shade, cloud, rain, tag, label, alert, mood: -1, linked: false,
     jumping: 0, celebrating: 0, from: new T.Vector3(), attention: false,
     upgrade(source: T.Group) {
       const rig = characterRig(source, pose)
       if (!rig) return
-      release(body)
-      body.removeFromParent()
-      for (const part of [body, head, ...arms, ...legs]) part.clear()
-      model.face = undefined
-      model.tears = rig.tears.map(({ x, y, z }) =>
+      const newTears = rig.tears.map(({ x, y, z }) =>
         ball(rig.effects, '#88c7df', x, y, z, .013, .024, .013))
-      for (const drop of model.tears) drop.visible = false
-      rig.effects.add(weather, label)
-      weather.position.set(.24, 1.035, .035)
-      weather.scale.setScalar(.62)
-      label.position.set(0, 1.15, 0)
-      alert.position.set(.47, .84, .035)
-      model.applyRig = rig.apply
+      for (const drop of newTears) drop.visible = false
       rig.apply()
       root.add(rig.model)
+      rig.effects.add(weather)
+      release(fallback)
+      fallback.removeFromParent()
+      for (const part of [body, head, ...arms, ...legs]) part.clear()
+      model.face = undefined
+      model.tears = newTears
+      model.applyRig = rig.apply
     },
   }
   return model

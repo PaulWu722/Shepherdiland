@@ -4,6 +4,35 @@ export const islandWidth = 9.44
 const islandDepth = 5.72
 const surfaces = new WeakMap<T.Group, ReturnType<typeof buildSurface>>()
 
+function sampleGround(model: T.Group, columns: number, rows: number, x0: number, z0: number, stepX: number, stepZ: number, top: number) {
+  const samples = Array.from({ length: columns }, () => Array.from({ length: rows }, () => [] as number[]))
+  const { a, b, c } = new T.Triangle()
+  const normal = new T.Vector3(), hit = new T.Vector3()
+  const ray = new T.Ray(new T.Vector3(0, top, 0), new T.Vector3(0, -1, 0))
+  // Visit each triangle once, testing only grid points inside its projected bounds.
+  model.traverse(child => {
+    if (!(child instanceof T.Mesh)) return
+    const index = child.geometry.index
+    const positions = child.geometry.getAttribute('position')
+    for (let i = 0; i + 2 < (index?.count ?? positions.count); i += 3) {
+      a.fromBufferAttribute(positions, index ? index.getX(i) : i).applyMatrix4(child.matrixWorld)
+      b.fromBufferAttribute(positions, index ? index.getX(i + 1) : i + 1).applyMatrix4(child.matrixWorld)
+      c.fromBufferAttribute(positions, index ? index.getX(i + 2) : i + 2).applyMatrix4(child.matrixWorld)
+      if (T.Triangle.getNormal(a, b, c, normal).y <= .5) continue
+      const left = Math.max(0, Math.ceil((Math.min(a.x, b.x, c.x) - x0) / stepX))
+      const right = Math.min(columns - 1, Math.floor((Math.max(a.x, b.x, c.x) - x0) / stepX))
+      const back = Math.max(0, Math.ceil((Math.min(a.z, b.z, c.z) - z0) / stepZ))
+      const front = Math.min(rows - 1, Math.floor((Math.max(a.z, b.z, c.z) - z0) / stepZ))
+      for (let x = left; x <= right; x++) for (let z = back; z <= front; z++) {
+        ray.origin.x = x0 + x * stepX
+        ray.origin.z = z0 + z * stepZ
+        if (ray.intersectTriangle(a, b, c, true, hit)) samples[x][z].push(hit.y)
+      }
+    }
+  })
+  return samples
+}
+
 function buildSurface(source: T.Group) {
   if (source.getObjectByProperty('type', 'SkinnedMesh')) return
   const object = new T.Group(), model = new T.Group()
@@ -25,16 +54,11 @@ function buildSurface(source: T.Group) {
   const columns = 15, rows = 13
   const stepX = islandWidth / columns, stepZ = depth / rows
   const x0 = (stepX - islandWidth) / 2, z0 = (stepZ - depth) / 2
-  const ray = new T.Raycaster(new T.Vector3(), new T.Vector3(0, -1, 0))
-  const normal = new T.Vector3(), normalMatrix = new T.Matrix3()
+  const samples = sampleGround(model, columns, rows, x0, z0, stepX, stepZ, bounds.max.y * scale + 1)
   const mid: number[] = []
-  const samples = Array.from({ length: columns }, (_, i) => Array.from({ length: rows }, (_, j) => {
-    ray.ray.origin.set(x0 + i * stepX, bounds.max.y * scale + 1, z0 + j * stepZ)
-    const heights = ray.intersectObject(model).filter(hit => hit.face &&
-      normal.copy(hit.face.normal).applyNormalMatrix(normalMatrix.getNormalMatrix(hit.object.matrixWorld)).y > .5
-    ).map(hit => hit.point.y)
+  samples.forEach((column, i) => column.forEach((heights, j) => {
+    heights.sort((a, b) => b - a)
     if (heights.length && Math.hypot(i / (columns - 1) - .5, j / (rows - 1) - .5) < .32) mid.push(heights[0])
-    return heights
   }))
   if (!mid.length) return
   mid.sort((a, b) => a - b)
