@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // GitHub Pages serves the app under /Shepherdiland/; the deploy workflow sets BASE_PATH.
+  base: process.env.BASE_PATH ?? '/',
   build: {
     rolldownOptions: {
       output: {
@@ -21,7 +23,8 @@ export default defineConfig({
       name: 'Shepherdiland 我的回訪',
       short_name: '我的回訪',
       lang: 'zh-Hant',
-      start_url: '/',
+      start_url: '.',
+      scope: '.',
       display: 'standalone',
       background_color: '#fff9ef',
       theme_color: '#fff9ef',

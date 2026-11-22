@@ -1,6 +1,6 @@
 self.addEventListener('notificationclick', event => {
   event.notification.close()
-  const url = new URL(event.notification.data?.url || '/', self.location.origin)
+  const url = new URL(event.notification.data?.url || self.registration.scope, self.location.origin)
   if (url.origin !== self.location.origin) return
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })

@@ -20,5 +20,5 @@ export function portrait(contact?: Contact, classes = '', mood?: string) {
     <path d="M36 54q4 4 8 0" fill="none" stroke="#9c5140" stroke-width="1.5" stroke-linecap="round"/>
     <ellipse cx="23" cy="50" rx="4.5" ry="2.4" fill="#ed9b90"/><ellipse cx="57" cy="50" rx="4.5" ry="2.4" fill="#ed9b90"/>
   </svg>`
-  return `<span class="portrait ${classes}" style="--portrait-bg:${look?.backdrop ?? '#f2e2c8'}" ${label}>${fallback}${look ? `<img src="/avatars/${look.avatar}.png" alt="" width="160" height="160" decoding="async">` : ''}</span>`
+  return `<span class="portrait ${classes}" style="--portrait-bg:${look?.backdrop ?? '#f2e2c8'}" ${label}>${fallback}${look ? `<img src="${import.meta.env.BASE_URL}avatars/${look.avatar}.png" alt="" width="160" height="160" decoding="async">` : ''}</span>`
 }

@@ -446,7 +446,7 @@ async function remind() {
   if (contact) url.searchParams.set('contact', contact)
   const registration = await navigator.serviceWorker?.getRegistration()
   const body = [appointments.length ? `今天有 ${appointments.length} 個約定` : '', people.length ? `想想 ${people.map(person => person.name).join('、')}` : ''].filter(Boolean).join('。')
-  if (registration) await registration.showNotification('我的回訪', { body, data: { url: url.href }, icon: '/icon.svg' })
+  if (registration) await registration.showNotification('我的回訪', { body, data: { url: url.href }, icon: import.meta.env.BASE_URL + 'icon.svg' })
   else {
     const notification = new Notification('我的回訪', { body })
     notification.onclick = () => { window.focus(); if (contact) openDetail(contact) }
@@ -648,5 +648,5 @@ if (db) {
   })
 } else void start('demo')
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => { void navigator.serviceWorker.register('/sw.js').catch(() => {}) })
+  window.addEventListener('load', () => { void navigator.serviceWorker.register(import.meta.env.BASE_URL + 'sw.js').catch(() => {}) })
 }
