@@ -27,3 +27,5 @@ dist-ssr
 !.env.example
 supabase/.temp/
 art-src/glb-original/
+art-src/sprites/
+art-src/islands2d/

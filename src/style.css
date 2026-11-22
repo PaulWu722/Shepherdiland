@@ -36,12 +36,8 @@ button:focus-visible,a:focus-visible,summary:focus-visible {outline:3px solid #e
 .icon {width:42px; height:42px; border-radius:50%; background:var(--soft); color:var(--ink); border:1px solid var(--line)}
 #mode:not(:empty),.chip {font-size:.73rem; border-radius:99px; padding:.3rem .55rem; background:var(--soft); color:var(--accent)}
 #workspace {padding-bottom:calc(15.55cqw + env(safe-area-inset-bottom))}
-.scene {position:relative; overflow:hidden; isolation:isolate; background:#fff0d7; touch-action:none}
-.scene canvas,.scene-labels {position:absolute; inset:0; touch-action:none}
-.scene-labels {pointer-events:none}
+.scene {position:relative; overflow:hidden; isolation:isolate; background:#fff0d7}
 .eyebrow {display:block; color:var(--accent); margin-bottom:.26rem}
-.fallback {display:none}
-.no-webgl .fallback {display:block; position:absolute; inset:45% 1rem auto; text-align:center; color:#5c472f}
 .sheet {position:relative; z-index:3; margin-top:-2cqw; border-radius:5.5cqw 5.5cqw 0 0; background:var(--page); padding:0 5.4cqw 1cqw; box-shadow:0 -5px 18px #715b4110}
 .sheet-handle {display:grid; place-items:center; width:100%; height:4.6cqw; touch-action:none; border:0; padding:0; background:none}
 .sheet-handle span {height:.9cqw; width:9.4cqw; background:#c9c2b7; border-radius:10px}
@@ -179,9 +175,7 @@ body:has(#workspace:not([hidden]) #island:not([hidden])) .settings-button {
   display:flex; align-items:center; gap:.3em; border:0; border-radius:100px;
   box-shadow:0 2px 5px #53351f21; line-height:1.05; white-space:nowrap; color:#382618; font-weight:800;
 }
-.nametag {display:block; overflow:hidden; text-overflow:ellipsis; pointer-events:auto; padding:.26em .54em; background:#fffdfa; font-size:clamp(11px,3.75cqw,16px)}
-#world .nametag {padding:.31em .67em; font-size:3.15cqw}
-.nametag:disabled {opacity:1; pointer-events:none}
+.nametag {background:#fffdfa; pointer-events:auto}
 .island-sign {padding:.42em .75em; background:#fff6dbf2; font-size:3.3cqw}
 .island-sign .glyph {color:#876c35; width:1.37em; height:1.23em}
 .attention-bubble {
@@ -194,8 +188,8 @@ body:has(#workspace:not([hidden]) #island:not([hidden])) .settings-button {
 .analysis-wait span {animation:pulse 1.15s ease-in-out infinite}
 @keyframes pulse {50% {scale:1.1; box-shadow:0 0 0 6px #fff0a958}}
 #island.expanded #world {margin-bottom:calc(66px - var(--world-height)); filter:brightness(.79)}
-#island.expanded #world canvas {transform:translateY(calc(var(--world-height) * -.325))}
-#island.expanded :is(.scene-caption,#scene-progress,.scene-actions,.scene-labels) {visibility:hidden}
+#island.expanded .island-layer {margin-top:calc(var(--world-height) * -.325)}
+#island.expanded :is(.scene-caption,#scene-progress,.scene-actions,.island-avatar,.island-sign,.island-fireflies) {visibility:hidden}
 body:has(#island.expanded:not([hidden])) .top-actions {visibility:hidden}
 #island.expanded .sheet {min-height:calc(100svh - 52px); background:#fdfaf3; padding-bottom:1rem}
 #island.expanded .sheet-handle {height:25px}
