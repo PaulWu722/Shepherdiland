@@ -3,6 +3,7 @@
   transition:transform .48s cubic-bezier(.22,.65,.24,1);
 }
 .island-scene.is-focusing {transition-duration:.52s; transition-delay:.08s}
+.island-landscape {position:absolute; inset:0}
 .island-layer {position:absolute; z-index:1; animation:island-float 6s ease-in-out infinite}
 .island-bottom {z-index:2; animation-delay:-3s}
 .island-top:has([data-activity="flight"]) {z-index:3}

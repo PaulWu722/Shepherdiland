@@ -117,6 +117,7 @@ summary {cursor:pointer; color:var(--accent); font-weight:700}
 .login {max-width:400px; width:calc(100% - 2rem); margin:3rem auto}
 #toast {position:fixed; z-index:10; bottom:calc(80px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); max-width:90%; width:max-content; background:#29473d; color:#fff; border-radius:12px; padding:.65rem .9rem; font-size:.82rem; pointer-events:none}
 #toast:empty {display:none}
+@media (width < 900px) {
 body:has(#workspace:not([hidden]) #island:not([hidden])) .top {
   position:absolute; inset:0 0 auto; height:0; padding:0; border:0; z-index:5;
 }
@@ -129,6 +130,7 @@ body:has(#workspace:not([hidden]) #island:not([hidden])) .settings-button {
   --ink:#302015; --muted:#504940; --page:#fffdf8; --surface:#fffefa; --line:#ede8dd;
   --soft:#f5ecdd; --accent:#567b42; --accent-ink:#fff;
   color:var(--ink); background:var(--page); color-scheme:light; min-height:calc(100dvh - 15.55cqw - env(safe-area-inset-bottom));
+}
 }
 #world {
   --world-height:100.6cqw;
@@ -187,6 +189,12 @@ body:has(#workspace:not([hidden]) #island:not([hidden])) .settings-button {
 .attention-bubble::after {content:""; position:absolute; top:91%; left:48%; border:.23em solid transparent; border-top-color:#d23b33; transform:rotate(12deg)}
 .analysis-wait span {animation:pulse 1.15s ease-in-out infinite}
 @keyframes pulse {50% {scale:1.1; box-shadow:0 0 0 6px #fff0a958}}
+.sheet-title-button {display:inline-flex; vertical-align:top; align-items:center; gap:.28em; padding:0; background:none; border:0; color:inherit; text-align:left; font-weight:inherit}
+.sheet-title-button:hover {color:var(--accent)}
+.sheet-level {display:none}
+.person .day-badge {display:inline-block; border-radius:7px; background:#d8a136; color:#fff; padding:.24rem .45rem; font-size:.79rem; font-weight:750; white-space:nowrap}
+.person .day-urgent {background:#d5534b}
+@media (width < 900px) {
 #island.expanded #world {margin-bottom:calc(66px - var(--world-height)); filter:brightness(.79)}
 #island.expanded .island-layer {margin-top:calc(var(--world-height) * -.325)}
 #island.expanded :is(.scene-caption,#scene-progress,.scene-actions,.island-avatar,.island-sign,.island-fireflies) {visibility:hidden}
@@ -198,8 +206,6 @@ body:has(#island.expanded:not([hidden])) .top-actions {visibility:hidden}
 #island.expanded .overview-grid {gap:.95rem}
 #island .overview-grid {grid-template-columns:minmax(0,1fr); gap:2cqw}
 #island .overview-grid h2,.sheet-distribution h3 {font-size:4.15cqw; line-height:1.2}
-.sheet-title-button {display:inline-flex; vertical-align:top; align-items:center; gap:.28em; padding:0; background:none; border:0; color:inherit; text-align:left; font-weight:inherit}
-.sheet-title-button:hover {color:var(--accent)}
 .today-section {
   min-height:17.8cqw; padding:1.7cqw 2.4cqw; border:1px solid #d8e2ee; border-radius:2.1cqw;
   background:linear-gradient(115deg,#ecf5fe,#f1f7ff);
@@ -231,9 +237,6 @@ body:has(#island.expanded:not([hidden])) .top-actions {visibility:hidden}
 #island .person-main {gap:3.2cqw}
 #island .person-main strong {font-size:3.42cqw; line-height:1.2}
 #island .person-main small {font-size:2.48cqw; line-height:1.35; margin-top:.13em}
-.sheet-level {display:none}
-.person .day-badge {display:inline-block; border-radius:7px; background:#d8a136; color:#fff; padding:.24rem .45rem; font-size:.79rem; font-weight:750; white-space:nowrap}
-.person .day-urgent {background:#d5534b}
 #island .chat-links {flex-wrap:nowrap; gap:3cqw}
 #island .chat {width:5.8cqw; height:5.8cqw; min-height:0; padding:0; border-radius:1.5cqw; color:white}
 #island .chat .glyph {width:4.55cqw; height:4.55cqw}
@@ -258,6 +261,7 @@ body:has(#island.expanded:not([hidden])) .top-actions {visibility:hidden}
 .distribution-bars span {display:block; height:7px; border-radius:10px; background:var(--level)}
 .distribution-bars strong {display:block; margin-top:.25em; font-size:.88rem}
 .sheet-moods {margin-top:1.65rem}
+}
 
 .nav {
   display:grid; grid-template-columns:repeat(5,1fr); position:fixed; left:50%; bottom:0; transform:translateX(-50%);
@@ -278,3 +282,70 @@ body:has(#island.expanded:not([hidden])) .top-actions {visibility:hidden}
 }
 .nav-add .glyph {width:5.7cqw; height:5.7cqw}
 .sr-only {position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+
+@media (min-width:900px) {
+  #app {
+    --nav-height:64px;
+    --desktop-gutter:clamp(16px,2vw,28px);
+    --panel-height:calc(100dvh - var(--nav-height) - 2 * var(--desktop-gutter));
+    max-width:none; color:var(--ink); background:transparent; container-type:normal;
+  }
+  #stage {background:var(--page)}
+  .top {
+    position:sticky; top:0; z-index:5; height:var(--nav-height); padding-inline:var(--desktop-gutter);
+  }
+  .nav {
+    display:flex; align-items:center; gap:.35rem; top:0; bottom:auto; width:max-content;
+    height:var(--nav-height); padding:0; background:none; border:0; border-radius:0; box-shadow:none;
+  }
+  .nav button {
+    display:flex; align-items:center; gap:.4rem; min-height:40px; padding:0 .7rem;
+    color:var(--muted); font-size:.9rem;
+  }
+  .nav :is([aria-current=page],.nav-item:hover) {background:var(--soft); color:var(--accent)}
+  .nav :is(.glyph,.glyph-island) {width:23px; height:23px}
+  .nav .nav-add {place-self:center; width:40px; height:40px; margin:0; padding:0; justify-content:center}
+
+  #workspace {
+    display:grid; justify-content:center; align-items:start;
+    grid-template-columns:min(46vw,calc(var(--panel-height) * .75)) minmax(0,640px);
+    gap:var(--desktop-gutter); padding:var(--desktop-gutter);
+  }
+  #island {display:contents}
+  #world {
+    --composition-top:calc((100% - var(--world-height)) / 2);
+    grid-area:1 / 1; position:sticky; top:calc(var(--nav-height) + var(--desktop-gutter));
+    height:var(--panel-height); container-type:inline-size; border-radius:24px; box-shadow:0 8px 28px #35271926;
+  }
+  #world .island-landscape {inset-block:var(--composition-top) auto; height:var(--world-height)}
+  #world .scene-caption {top:calc(var(--composition-top) + 10.6cqw)}
+  #scene-progress {top:calc(var(--composition-top) + 9.6cqw)}
+  #scene-progress .progress {color:#382618}
+  .scene-actions {right:1rem; bottom:1rem; gap:.4rem}
+  .scene-actions .icon {width:36px; height:36px}
+
+  #sheet,#page {grid-area:1 / 2; min-width:0}
+  #sheet {margin:0; padding:0; border-radius:0; background:none; box-shadow:none}
+  .sheet-handle {display:none}
+  #page {padding:1.25rem; border-radius:24px; background:var(--page)}
+  .overview-grid > .card,.split > .card {padding:1rem; align-content:start}
+  .overview-grid :is(.people,.appointment-list) {margin-top:0}
+  .overview-grid .person {
+    grid-template-columns:minmax(0,1fr) auto auto auto;
+    border:0; border-radius:0; padding:.55rem 0; box-shadow:none;
+  }
+  .overview-grid .person + .person {border-top:1px solid var(--line)}
+  .overview-grid .sheet-level {display:block}
+  .person .day-badge {color:var(--ink); background:color-mix(in srgb,var(--surface),#d8a136 30%)}
+  .person .day-urgent {background:color-mix(in srgb,var(--surface),#d5534b 30%)}
+  .overview-grid .today-appointment {grid-template-columns:auto minmax(0,1fr) fit-content(45%)}
+  .overview-grid .appointment-portrait {width:44px; height:44px}
+  .appointment-summary {min-width:0; overflow-wrap:anywhere}
+  .appointment-summary strong {display:block; font-size:1.06rem}
+  .appointment-place {color:var(--accent); text-align:right; overflow-wrap:anywhere}
+  .appointment-place:hover {text-decoration:underline}
+  .split {grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin-top:0}
+  .distribution .chips {align-content:start}
+  dialog {width:min(560px,calc(100% - 2rem))}
+  #toast {bottom:1rem}
+}

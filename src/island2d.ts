@@ -77,6 +77,8 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
   const camera = element('div', compact ? 'island-scene island-compact' : 'island-scene')
   if (compact) camera.setAttribute('aria-hidden', 'true')
   host.prepend(camera)
+  const landscape = element('div', 'island-landscape')
+  camera.append(landscape)
   const layers = {} as Record<Platform, HTMLElement>
   for (const name of (compact ? ['bottom'] : ['top', 'bottom']) as Platform[]) {
     const platform = platforms[name]
@@ -98,7 +100,7 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
       layer.append(sign)
     }
     layers[name] = layer
-    camera.append(layer)
+    landscape.append(layer)
   }
   if (!compact) {
     const fireflies = element('div', 'island-fireflies')
@@ -108,7 +110,7 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
       Object.assign(light.style, { left: pct(x), top: pct(y), animationDelay: `-${i * .83}s` })
       fireflies.append(light)
     }
-    camera.append(fireflies)
+    landscape.append(fireflies)
   }
 
   const actors = new Map<string, Actor>()

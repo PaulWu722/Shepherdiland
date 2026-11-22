@@ -32,6 +32,7 @@ let calendarDay = day()
 let filters = { search: '', school: '', department: '', openness: '', mood: '' }
 let lastRefresh = '', sessionToken = 0
 const photoUrls = new Set<string>()
+const desktop = matchMedia('(min-width: 900px)')
 
 const backdrop = Object.keys(import.meta.glob('/public/bg/{day,dusk,night}.webp')).map(file => {
   const name = file.slice('/public/bg/'.length, -'.webp'.length)
@@ -95,13 +96,13 @@ function person(contact: Contact, onSheet = false) {
   const level = openness(contact.openness)
   return `<article class="person"><button type="button" class="person-main" data-action="detail" data-value="${e(contact.id)}">${portrait(contact, '', moods[value.mood])}<span class="person-details"><strong>${e(contact.name)}</strong><small>${[contact.school, contact.department].filter(Boolean).map(e).join('・')}</small></span></button>${onSheet ? `<span class="sheet-level" title="敞開程度：${levels[contact.openness - 1]}">${level}</span>` : ''}<div class="person-status">${onSheet ? '' : level}<small class="day-badge ${value.mood >= 2 ? 'day-urgent' : ''}" title="${lastText(value.elapsed)}">${Number.isFinite(value.elapsed) ? `${value.elapsed} 天` : '未聯繫'}</small></div>${links(contact)}</article>`
 }
-function appointment(row: Appointment, full = false) {
+function appointment(row: Appointment, full = false, showPortrait = false) {
   const time = e(row.time.slice(0, 5))
   const contact = find(row.contact_id)
   const mapUrl = row.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(row.location)}` : ''
   if (!full) {
     const navigate = (className: string, content: string) => `<a class="${className}" href="${mapUrl}" target="_blank" rel="noopener noreferrer" aria-label="導航至${e(row.location)}">${content}</a>`
-    return expanded ? `<article class="appointment today-appointment">
+    return showPortrait ? `<article class="appointment today-appointment">
       ${portrait(contact, 'appointment-portrait')}<div class="appointment-summary" title="${e(row.scripture)}"><strong>${time}</strong><span>${e(contact?.name)}</span>${row.scripture ? `<span class="sr-only">${e(row.scripture)}</span>` : ''}</div>
       ${mapUrl ? navigate('appointment-place', e(row.location)) : ''}
     </article>` : `<article class="appointment today-appointment">
@@ -125,13 +126,17 @@ function overview() {
   const overdue = state.contacts.map(contact => ({ contact, ...stateOf(contact) })).filter(row => row.mood > 0)
   overdue.sort((a, b) => Number(b.mood === 2) - Number(a.mood === 2) || (b.overdue === a.overdue ? b.mood - a.mood : b.overdue - a.overdue))
   const today = todayRows()
-  return `${expanded ? `<div class="sheet-heading"><h1>本週回訪</h1>${progress()}</div>` : ''}
+  const wide = desktop.matches
+  const full = wide || expanded
+  const title = wide ? `快快聯繫 ${icon('bell')}` : expanded ? '該聯繫了' : `<button type="button" class="sheet-title-button" data-action="expand" title="展開聯繫清單">快快聯繫 ${icon('bell')}</button>`
+  return `${expanded && !wide ? `<div class="sheet-heading"><h1>本週回訪</h1>${progress()}</div>` : ''}
   <div class="overview-grid">
-    <section class="today-section"><h2><button type="button" class="sheet-title-button" data-action="tab" data-value="calendar" title="看行程">${expanded ? '' : icon('calendar')}今天的約</button></h2>
-    <div class="appointment-list">${(expanded ? today : today.slice(0, 1)).map(row => appointment(row)).join('') || empty('今天還沒有安排約定。')}</div></section>
-    <section><h2>${expanded ? '該聯繫了' : `<button type="button" class="sheet-title-button" data-action="expand" title="展開聯繫清單">快快聯繫 ${icon('bell')}</button>`}</h2>
-    <div class="people">${overdue.slice(0, expanded ? undefined : 3).map(({ contact }) => person(contact, true)).join('') || empty('目前沒有逾期的回訪。')}</div></section>
-  </div>${expanded ? distribution(true) : ''}`
+    <section class="${wide ? 'card ' : ''}today-section"><h2><button type="button" class="sheet-title-button" data-action="tab" data-value="calendar" title="看行程">${wide || !expanded ? icon('calendar') : ''}今天的約</button></h2>
+    <div class="appointment-list">${(full ? today : today.slice(0, 1)).map(row => appointment(row, false, full)).join('') || empty('今天還沒有安排約定。')}</div></section>
+    <section${wide ? ' class="card"' : ''}><h2>${title}</h2>
+    <div class="people">${overdue.slice(0, full ? undefined : 3).map(({ contact }) => person(contact, true)).join('') || empty('目前沒有逾期的回訪。')}</div></section>
+    ${wide ? `<div class="split">${distribution()}</div>` : ''}
+  </div>${expanded && !wide ? distribution(true) : ''}`
 }
 function contacts() {
   const departments = [...new Set(state.contacts.map(contact => contact.department))].filter(Boolean).sort()
@@ -173,16 +178,21 @@ function stats() {
   const current = weeks.at(-1)!.count
   return `<div class="page-heading"><div><span class="eyebrow">我的回訪</span><h1>統計</h1></div>${progress(current)}</div><section class="card"><h2>每週聯繫人數</h2><p>本週目標達成率 ${Math.round(100 * current / state.settings.weekly_target)}%</p><div class="chart">${weeks.map(({ start, count }) => `<div><strong>${count}</strong><span style="--height:${count / max * 100}%"></span><small>${start.slice(5)}</small></div>`).join('')}</div></section><div class="split">${distribution()}</div><section class="card"><h3>各校人數</h3><div class="chips">${schools.map(school => `<span class="chip">${school}・${state.contacts.filter(contact => contact.school === school).length} 位</span>`).join('')}</div></section>`
 }
-function render() {
-  if (!state) return
-  refreshTheme()
-  $('#island').hidden = tab !== 'island'
+function renderLayout() {
+  $('#island').hidden = tab !== 'island' && !desktop.matches
+  $('#sheet').hidden = tab !== 'island'
   $('#page').hidden = tab === 'island'
   $('#island').classList.toggle('expanded', expanded)
   $('.sheet-handle').setAttribute('aria-expanded', String(expanded))
   $('.sheet-handle').setAttribute('aria-label', expanded ? '收合本週回訪' : '展開本週回訪')
-  $('#scene-progress').innerHTML = progress()
   $('#overview').innerHTML = overview()
+}
+desktop.addEventListener('change', () => { if (state) renderLayout() })
+function render() {
+  if (!state) return
+  refreshTheme()
+  renderLayout()
+  $('#scene-progress').innerHTML = progress()
   if (tab !== 'island') $('#page').innerHTML = tab === 'contacts' ? contacts() : tab === 'calendar' ? calendar() : stats()
   filterPeople()
   document.querySelectorAll<HTMLButtonElement>('[data-action="tab"].nav-item').forEach(item => item.setAttribute('aria-current', item.dataset.value === tab ? 'page' : 'false'))
