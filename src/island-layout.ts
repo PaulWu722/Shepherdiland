@@ -23,7 +23,7 @@ export function avatarKey(contact: Contact & { style?: string }) {
 
 export function islandSlot(platform: Platform, index: number, count: number, seated = false) {
   const { width, height, grass } = platforms[platform]
-  const columns = count <= 8 ? count : Math.ceil(Math.sqrt(count * 1.45))
+  const columns = count <= 4 ? count : count <= 6 ? Math.ceil(count / 2) : Math.ceil(Math.sqrt(count * 1.45))
   const rows = Math.ceil(count / columns)
   const row = Math.floor(index / columns)
   const inRow = Math.min(columns, count - row * columns)

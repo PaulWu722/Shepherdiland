@@ -68,6 +68,10 @@ type Actor = {
 }
 
 export function mountIsland(host: HTMLElement, choose: (id: string) => void, compact = false) {
+  // Moonlight as a channel multiply: CSS hue-rotate turned skin and grass teal.
+  if (!document.getElementById('island-night')) document.body.insertAdjacentHTML('beforeend', `<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="island-night" color-interpolation-filters="sRGB"><feColorMatrix values=".52 .04 .04 0 0  .04 .58 .06 0 0  .06 .09 .86 0 .03  0 0 0 1 0"/></filter>
+    <filter id="sprite-night" color-interpolation-filters="sRGB"><feColorMatrix values=".74 .03 .03 0 0  .03 .78 .04 0 0  .04 .06 .93 0 .02  0 0 0 1 0"/></filter></svg>`)
   const preview = animationPreview(new URLSearchParams(import.meta.env.DEV ? location.search : ''))
   const reduced = matchMedia('(prefers-reduced-motion: reduce)')
   const camera = element('div', compact ? 'island-scene island-compact' : 'island-scene')
@@ -157,12 +161,12 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
     const { grass } = platforms[actor.platform]
     const others = [...actors.values()].filter(other => other !== actor && other.platform === actor.platform).map(other => other.point)
     let best = actor.point, bestGap = -1
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 24; i++) {
       const angle = random(0, 2 * Math.PI), distance = Math.sqrt(Math.random()) * .8
       const point = { x: grass.x + grass.rx * distance * Math.cos(angle), y: grass.y + grass.ry * distance * Math.sin(angle) }
       const gap = Math.min(1, ...others.map(other => Math.hypot(other.x - point.x, (other.y - point.y) * 2.4)))
       if (gap > bestGap) { best = point; bestGap = gap }
-      if (gap > .22) break
+      if (gap > .3) break
     }
     return best
   }
@@ -345,6 +349,29 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
   }
   reduced.addEventListener('change', motionChanged)
 
+  // Roaming people cross paths, so lift the farther-back tag whenever two tags overlap.
+  function separateTags() {
+    if (compact || document.hidden) return
+    for (const platform of Object.keys(platforms) as Platform[]) {
+      const boxes = [...actors.values()].filter(actor => actor.platform === platform).map(actor => {
+        const label = actor.button.querySelector<HTMLElement>('.avatar-label')!
+        const lift = Number.parseFloat(actor.button.style.getPropertyValue('--tag-lift')) || 0
+        const rect = label.getBoundingClientRect()
+        return { actor, left: rect.left, right: rect.right, height: rect.height, bottom: rect.bottom + lift, lift: 0 }
+      }).sort((a, b) => b.bottom - a.bottom)
+      const placed: typeof boxes = []
+      for (const box of boxes) {
+        for (const other of placed) {
+          const top = other.bottom - other.lift - other.height
+          if (box.left < other.right + 3 && box.right > other.left - 3 && box.bottom - box.lift > top - 2) box.lift = box.bottom - top + 2
+        }
+        box.actor.button.style.setProperty('--tag-lift', `${Math.round(box.lift)}px`)
+        placed.push(box)
+      }
+    }
+  }
+  const tagTimer = window.setInterval(separateTags, 200)
+
   return {
     reset,
     setCovered(value: boolean) {
@@ -410,6 +437,7 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
     },
     dispose() {
       window.clearTimeout(focusTimer)
+      window.clearInterval(tagTimer)
       for (const actor of actors.values()) {
         clearTimers(actor)
         actor.flight?.cancel()

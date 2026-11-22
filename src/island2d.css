@@ -59,10 +59,10 @@
 [data-pose="sit"] .sprite-placeholder > b {inset-inline:2%}
 
 .avatar-label {
-  position:absolute; left:50%; bottom:calc(100% + .62cqw); display:flex; justify-content:center; translate:-50% 0;
-  pointer-events:none;
+  position:absolute; left:50%; bottom:calc(100% + .62cqw + var(--tag-lift,0px)); display:flex; justify-content:center; translate:-50% 0;
+  pointer-events:none; transition:bottom .25s ease-out;
 }
-.island-avatar:has([data-pose="sit"]) .avatar-label {bottom:calc(100% - var(--seat-label) + .62cqw)}
+.island-avatar:has([data-pose="sit"]) .avatar-label {bottom:calc(100% - var(--seat-label) + .62cqw + var(--tag-lift,0px))}
 .avatar-label .nametag {font-size:var(--tag-size); max-width:var(--tag-width); padding:.31em .34em; gap:.18em}
 .nametag-name {overflow:hidden; text-overflow:ellipsis}
 .nametag-mood {flex:none}
@@ -115,7 +115,8 @@
 
 .scene {--island-light:brightness(1)}
 .scene[data-period="2"] {--island-light:sepia(.28) saturate(1.12) brightness(.94)}
-.scene[data-period="3"] {--island-light:sepia(.28) hue-rotate(167deg) saturate(.83) brightness(.75)}
+.scene[data-period="3"] {--island-light:url(#island-night)}
+.scene[data-period="3"] .sprite-visual {filter:url(#sprite-night) brightness(var(--mood-light,1))}
 .island-art {filter:var(--island-light); transition:filter .8s}
 .sprite-visual {filter:var(--island-light) brightness(var(--mood-light,1))}
 .sprite-visual[data-pose="sad"] {--mood-light:.85}
