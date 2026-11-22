@@ -1,9 +1,10 @@
 import './style.css'
+import './island2d.css'
 import { db, load, cache, saveRows, imageUrl, removeImages, invoke } from './data'
 import type { Table } from './data'
 import { day, monday, id, schools, levels, colors, moods, faces, methods, defaults, status, latest, demoAdvice } from './model'
 import type { Contact, Interaction, Appointment, Prayer, Settings, State, Advice } from './model'
-import { mountIsland, localPeriod, periods } from './island'
+import { mountIsland, localPeriod, periods } from './island2d'
 import { chatUpload } from './upload'
 import { escape } from './html'
 import { icon } from './icons'
@@ -25,7 +26,7 @@ const openness = (level: number) => `<span class="level" style="--level:${colors
 const targetFields = (pref: Pick<Contact, 'frequency_mode' | 'frequency_value'>, prefix = '') => `<div class="form-grid">${fields('回訪模式', `<select name="${prefix}frequency_mode"><option value="interval" ${selected(pref.frequency_mode, 'interval')}>每隔幾天</option><option value="weekly" ${selected(pref.frequency_mode, 'weekly')}>每週幾次</option></select>`)}${input('天數／次數', prefix + 'frequency_value', String(pref.frequency_value), 'required type="number" min="1" max="365"')}</div>`
 const readGoal = (data: FormData, prefix = '') => ({ frequency_mode: get(data, prefix + 'frequency_mode') === 'weekly' ? 'weekly' as const : 'interval' as const, frequency_value: Number(get(data, prefix + 'frequency_value')) })
 let state: State, user = '', tab = 'island', expanded = false, period: number | null = null
-let detailId: string | null = null, detailScene: ReturnType<typeof mountIsland> = null
+let detailId: string | null = null, detailScene: ReturnType<typeof mountIsland> | null = null
 let month = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
 let calendarDay = day()
 let filters = { search: '', school: '', department: '', openness: '', mood: '' }
@@ -43,7 +44,7 @@ $('#app').innerHTML = `
  <header class="top"><div class="brand"><span class="mark" aria-hidden="true">🌱</span><div><strong>Shepherdiland</strong><small>我的回訪</small></div></div><div class="top-actions"><span id="mode"></span>${button('⚙', 'settings', '', 'icon settings-button')}</div></header>
  <main id="workspace" hidden>
   <section id="island" aria-label="回訪島嶼">
-   <div class="scene" id="world">${backdrop}<div class="scene-caption"><h1>${icon('sprig')}<span>我的回訪</span></h1><div class="scene-ornament" aria-hidden="true">★</div></div><div id="scene-progress"></div><div class="scene-actions"><button type="button" class="icon" data-action="reset" aria-label="重設視角" title="重設視角">${icon('reset')}</button><button type="button" class="icon" data-action="period" aria-label="自動時段" title="自動時段">${icon('period')}</button></div><p class="fallback">目前裝置無法顯示 3D，仍可從名單開啟成員資料。</p></div>
+   <div class="scene" id="world">${backdrop}<div class="scene-caption"><h1>${icon('sprig')}<span>我的回訪</span></h1><div class="scene-ornament" aria-hidden="true">★</div></div><div id="scene-progress"></div><div class="scene-actions"><button type="button" class="icon" data-action="reset" aria-label="重設視角" title="重設視角">${icon('reset')}</button><button type="button" class="icon" data-action="period" aria-label="自動時段" title="自動時段">${icon('period')}</button></div></div>
    <section id="sheet" class="sheet"><button class="sheet-handle" aria-expanded="false" aria-label="展開本週回訪"><span></span></button><div id="overview"></div></section>
   </section>
   <section id="page" hidden></section>
@@ -327,7 +328,10 @@ function openDetail(key: string) {
   if (!find(key)) return
   detailId = key
   drawDetail()
-  if (!detail.open) { detail.showModal(); detailScene?.reset() }
+  if (!detail.open) {
+    detail.showModal()
+    scene.setCovered(true)
+  }
 }
 function drawDetail() {
   const contact = detailId ? find(detailId) : undefined
@@ -341,7 +345,7 @@ function drawDetail() {
   const prayers = state.prayer_requests.filter(row => row.contact_id === contact.id).sort((a, b) => b.date.localeCompare(a.date))
   const progressValue = contact.bible_progress
   $('#app').append($('#toast'))
-  detail.innerHTML = `<div class="dialog-head"><span class="eyebrow">成員詳情</span>${button('✕', 'close-detail', '', 'icon')}</div><div class="dialog-body detail-body"><div class="detail-hero"><div id="mini-scene" class="scene"><p class="fallback">${faces[current.mood]}</p></div><div><h1>${e(contact.name)}</h1><p>${e(contact.school)}・${e(contact.department)} ${e(contact.grade)}</p>${openness(contact.openness)} <span class="chip">${faces[current.mood]} ${moods[current.mood]}</span></div>${button('編輯成員', 'edit', contact.id)}</div>
+  detail.innerHTML = `<div class="dialog-head"><span class="eyebrow">成員詳情</span>${button('✕', 'close-detail', '', 'icon')}</div><div class="dialog-body detail-body"><div class="detail-hero"><div id="mini-scene" class="scene"></div><div><h1>${e(contact.name)}</h1><p>${e(contact.school)}・${e(contact.department)} ${e(contact.grade)}</p>${openness(contact.openness)} <span class="chip">${faces[current.mood]} ${moods[current.mood]}</span></div>${button('編輯成員', 'edit', contact.id)}</div>
   <section class="card section-row"><div><h3>回訪目標</h3><p>${contact.frequency_mode === 'interval' ? `每 ${contact.frequency_value} 天一次，${lastText(current.elapsed)}` : `本週 ${current.count}/${contact.frequency_value} 次`}</p></div>${button('調整', 'goal', contact.id)}</section>
   ${adviceCard(contact)}
   <section class="card"><div class="section-row"><h3>約定事項</h3>${button('＋ 新增約定', 'new-appointment', contact.id)}</div>${appointments.map(row => appointment(row, true)).join('') || empty('目前沒有即將到來的約定。')}</section>
@@ -369,6 +373,7 @@ function drawDetail() {
   })
 }
 detail.addEventListener('close', () => {
+  scene.setCovered(false)
   detailId = null
   detailScene?.dispose()
   detailScene = null
@@ -482,11 +487,12 @@ async function deletePhoto(photoId: string) {
   drawDetail()
 }
 function tabTo(value: string) {
+  if (value !== 'island') scene.reset()
   tab = value
   render()
   window.scrollTo(0, 0)
 }
-function toggleSheet(value = !expanded) { expanded = value; render(); window.scrollTo(0, 0) }
+function toggleSheet(value = !expanded) { scene.reset(); expanded = value; render(); window.scrollTo(0, 0) }
 let swipe: number | null = null
 $('.sheet-handle').addEventListener('pointerdown', event => { swipe = event.clientY; $('.sheet-handle').setPointerCapture(event.pointerId) })
 $('.sheet-handle').addEventListener('pointerup', event => {
@@ -525,7 +531,7 @@ document.addEventListener('click', async event => {
       case 'settings': settings(); break
       case 'close': if (!modal.querySelector('form[data-busy]')) modal.close(); break
       case 'close-detail': detail.close(); break
-      case 'detail': openDetail(value); break
+      case 'detail': scene.reset(); openDetail(value); break
       case 'add': editContact(); break
       case 'edit': if (contact) editContact(contact); break
       case 'goal': if (contact) editContact(contact, true); break

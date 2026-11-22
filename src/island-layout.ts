@@ -1,46 +1,56 @@
-import { islandWidth } from './island-model.ts'
+import { demoLook } from './model.ts'
+import type { Contact } from './model.ts'
 
-// Fit the 720 × 1280 composition by width, with the camera anchored to the top.
-export const elevation = 35 * Math.PI / 180
-export const compositionWidth = 12.15
-// Set the upper island back along the view axis so its shadow clears the lower grass.
-export const platforms = [
-  { x: -.10, y: 1.16, z: -4.79, scale: .92, relief: 1, signDepth: 2.48, memberDepth: 0 },
-  { x: -.18, y: -.95, z: 1.05, scale: 1, relief: .8, signDepth: 1.14, memberDepth: -.32 },
-]
-export const compositionTop = platforms[0].y * Math.cos(elevation) -
-  platforms[0].z * Math.sin(elevation) + compositionWidth * (320 / 720)
-const standingHeight = islandWidth * .24
+export const referenceWidth = 720
+export const worldHeight = 724
 
-export function islandSlot(index: number, count: number, compact: boolean) {
-  if (compact) return { x: 0, z: 0, height: islandWidth * .144, walk: .27, nameWidth: 3.2 }
-  if (count < 4) {
-    const spacing = count === 3 ? 2.55 : 4.35
-    return {
-      x: (index - (count - 1) / 2) * spacing,
-      z: count === 3 && index === 1 ? -.14 : .35,
-      height: standingHeight, walk: .26, nameWidth: spacing - .65,
-    }
-  }
-  if (count === 4) {
-    const outer = index === 0 || index === 3
-    return {
-      x: (index < 2 ? -1 : 1) * (outer ? 2.68 : 1.33),
-      z: outer ? 1.55 : -.22,
-      height: standingHeight * .91, walk: .23, nameWidth: 2.04,
-    }
-  }
-  const columns = Math.ceil(Math.sqrt(count * 1.4))
+// Reference pixels for the image bounds, with the grass ellipse in image fractions.
+export const platforms = {
+  top: { left: 94, top: 254, width: 518, height: 258, grass: { x: .50, y: .335, rx: .405, ry: .145 }, sign: .505 },
+  bottom: { left: 43, top: 466, width: 619, height: 324, grass: { x: .53, y: .470, rx: .414, ry: .139 }, sign: .565 },
+}
+export type Platform = keyof typeof platforms
+export type Point = { x: number; y: number }
+
+const styles = new Map([
+  ['short', 'sage'], ['long', 'rose'], ['curly', 'honey'], ['bob', 'rose'],
+  ['pony', 'lavender'], ['swept', 'sky'], ['bun', 'marigold'],
+])
+
+export function avatarKey(contact: Contact & { style?: string }) {
+  return demoLook(contact)?.avatar ?? styles.get(contact.style ?? contact.hair) ?? 'sage'
+}
+
+export function islandSlot(platform: Platform, index: number, count: number, seated = false) {
+  const { width, height, grass } = platforms[platform]
+  const columns = count <= 4 ? count : count <= 6 ? Math.ceil(count / 2) : Math.ceil(Math.sqrt(count * 1.45))
   const rows = Math.ceil(count / columns)
-  const column = index % columns, row = Math.floor(index / columns)
-  const columnsInRow = Math.min(columns, count - row * columns)
-  const dx = 5.66 / (columns - .5), dz = 2.4 / (rows - 1)
-  const gap = Math.min(dx, dz)
+  const row = Math.floor(index / columns)
+  const inRow = Math.min(columns, count - row * columns)
+  const rowGap = .202 / Math.max(1, rows - 1)
+  const front = rows > 1 ? 0 : platform === 'bottom' ? -.032 : count < 3 ? .006 : -.020
+  const y = grass.y + front + (row - (rows - 1) / 2) * rowGap
+  const laneWidth = rows > 1 ? .52 : count === 4 ? .85 : .79
+  const dx = Math.min(.43, laneWidth / columns)
+  const step = Math.min(.034, dx * (rows > 1 ? .055 : count === 4 ? .09 : .14))
+  const column = index % columns
+  const offset = rows === 1 ? column - (inRow - 1) / 2
+    : column + Math.floor((columns - inRow) / 2) - (columns - 1) / 2 + (row % 2 ? .25 : -.25)
+  const x = grass.x + offset * dx
+  const edge = x < grass.x ? -1 : 1
+  const frontSeat = seated && platform === 'bottom' && count === 2
+  const nameWidth = Math.min(156, (dx - 2 * step) * width - 6)
+  const nameSize = Math.min(22.68, nameWidth / 5.35, rows > 1 ? (rowGap * .72 * height - 2) / 1.67 : Infinity)
+  const sprite = count <= 4 ? 109 : Math.min(98, dx * width * .87, rows > 1 ? rowGap * height * 1.5 : Infinity)
   return {
-    x: (column - (columnsInRow - 1) / 2 + (row % 2 ? .25 : -.25)) * dx,
-    z: -.52 + row * dz,
-    height: Math.min(standingHeight * .91, gap * 1.13),
-    walk: Math.min(.22, gap * .1), nameWidth: dx * .77,
+    x: seated && !frontSeat ? x + edge * (count === 1 ? .27 : step) : x,
+    y: seated && count === 1 ? grass.y + .04 : frontSeat ? y + .041 : y,
+    walkX: seated ? 0 : step,
+    walkY: seated ? 0 : rows === 1 ? .028 : Math.min(.013, rowGap * .10),
+    height: sprite,
+    width: Math.min(sprite * .92, rows === 1 ? (dx - 2 * step) * width - 5 : dx * width * .38),
+    nameWidth, nameSize,
+    seatLabel: rows === 1 && seated ? 18 : 0,
   }
 }
 

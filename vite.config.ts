@@ -7,8 +7,6 @@ export default defineConfig({
       output: {
         codeSplitting: {
           groups: [
-            { name: 'three-core', test: /[\/]three[\/]build[\/]three\.core\.js$/ },
-            { name: 'three-renderer', test: /[\/]three[\/](?!examples[\/]jsm[\/]loaders[\/]GLTFLoader\.js$)/ },
             { name: 'supabase', test: /[\/]@supabase[\/]/ },
           ],
         },
@@ -18,7 +16,7 @@ export default defineConfig({
   plugins: [VitePWA({
     injectRegister: false,
     registerType: 'autoUpdate',
-    includeAssets: ['icon.svg', 'notification.js', 'avatars/*.png'],
+    includeAssets: ['icon.svg', 'notification.js', 'avatars/*.png', 'bg/*.webp', 'islands/*.webp', 'sprites/*/*.webp'],
     manifest: {
       name: 'Shepherdiland 我的回訪',
       short_name: '我的回訪',
@@ -34,23 +32,6 @@ export default defineConfig({
       cleanupOutdatedCaches: true,
       clientsClaim: true,
       skipWaiting: true,
-      runtimeCaching: [{
-        urlPattern: ({ url, sameOrigin }) => sameOrigin && /\/models\/(?:island|char)_[a-z]+\.glb$/.test(url.pathname),
-        handler: 'NetworkFirst',
-        options: {
-          cacheName: 'shepherdiland-glb-v1',
-          plugins: [{
-            cacheWillUpdate: async ({ response }) => {
-              if (response.status !== 200) return null
-              const bytes = await response.clone().arrayBuffer()
-              if (bytes.byteLength < 20) return null
-              const header = new DataView(bytes)
-              return header.getUint32(0, true) === 0x46546c67 && header.getUint32(8, true) === bytes.byteLength
-                ? response : null
-            },
-          }],
-        },
-      }],
     },
   })],
 })
