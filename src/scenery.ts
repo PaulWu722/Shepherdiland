@@ -210,7 +210,7 @@ function trail(group: T.Group, lower: boolean) {
   group.add(new T.Mesh(geometry, new T.MeshStandardMaterial({ vertexColors: true, roughness: 1 })))
 }
 
-export function dressIsland(group: T.Group, low: boolean, lower: boolean, texture: T.Texture) {
+export function dressIsland(group: T.Group, low: boolean, lower: boolean, texture: T.Texture, castShadows = false) {
   terrain(group, lower ? 9 : 4, low)
   trail(group, lower)
   const props = new T.Group()
@@ -227,7 +227,12 @@ export function dressIsland(group: T.Group, low: boolean, lower: boolean, textur
     rock(props, x, z, .16 + noise(i * 27) * .24, ['#aaa59b', '#888477', '#c7bba6'][i % 3], i * 1.2)
   }
   flowers(props, low, lower)
-  group.add(batch(props))
+  const decor = batch(props)
+  group.add(decor)
+  if (castShadows && !low) {
+    for (const land of group.children) land.receiveShadow = true
+    decor.castShadow = true
+  }
   const anchors = lower ? [[-3.1, -.77, 1.95], [3.04, -1.13, .83]] : [[-3.12, -1.02, 1.7], [1.78, .27, .92], [3.57, -.79, 1.32]]
   for (const [x, z, size] of anchors) {
     const shade = shadow(texture, .28, size, size * .78)
@@ -242,18 +247,18 @@ export function dressIsland(group: T.Group, low: boolean, lower: boolean, textur
   return { fire, lamp }
 }
 
-export function distantIsland(seed: number, low: boolean) {
-  const group = new T.Group(), props = new T.Group()
-  terrain(group, seed, low)
-  for (const [x, z, size] of [[0,-.2,1.18],[-1.3,.35,.45],[1.37,.25,.58],[2.28,-.2,.34]]) rock(props, x, z, size, '#8c9b53', x)
-  group.add(batch(props))
-  return group
-}
-
-export function cloud(low: boolean) {
-  const puffs = new T.Group()
-  for (const [x, y, z, sx, sy, sz, tone] of [[-.89,0,.08,.7,.31,.48,'#fff4e5'],[.91,0,.02,.75,.31,.42,'#f8eadc'],[-.44,.19,.12,.67,.51,.57,'#fffaec'],[.15,.34,-.07,.82,.68,.66,'#fff7e8'],[.55,.05,.25,.69,.37,.57,'#fbebde']] as const) {
-    mesh(poly(low ? 0 : 1), tone, puffs, x, y, z).scale.set(sx, sy, sz)
-  }
-  return batch(puffs)
+export function fireflies(group: T.Group, texture: T.Texture, count: number, seed: number) {
+  const positions = Array.from({ length: count }, (_, i) => {
+    const n = i * 3 + seed * 53
+    return [(noise(n) - .5) * 6.8, .35 + noise(n + 1) * 1.1, (noise(n + 2) - .5) * 3.8]
+  }).flat()
+  const geometry = new T.BufferGeometry()
+  geometry.setAttribute('position', new T.Float32BufferAttribute(positions, 3))
+  const swarm = new T.Points(geometry, new T.PointsMaterial({
+    color: '#ffe09a', map: texture, size: 4, sizeAttenuation: false, toneMapped: false,
+    transparent: true, blending: T.AdditiveBlending, depthWrite: false,
+  }))
+  swarm.visible = false
+  group.add(swarm)
+  return swarm
 }

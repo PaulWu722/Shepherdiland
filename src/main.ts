@@ -32,11 +32,18 @@ let filters = { search: '', school: '', department: '', openness: '', mood: '' }
 let lastRefresh = '', sessionToken = 0
 const photoUrls = new Set<string>()
 
+const backdrop = Object.keys(import.meta.glob('/public/bg/{day,dusk,night}.webp')).map(file => {
+  const name = file.slice('/public/bg/'.length, -'.webp'.length)
+  const url = import.meta.env.BASE_URL + file.slice('/public/'.length)
+  return `<div class="scene-plate plate-${name}" aria-hidden="true" style="background-image:url('${e(url)}')"></div>`
+}).join('')
+const stage = $('#stage')
+stage.innerHTML = backdrop
 $('#app').innerHTML = `
  <header class="top"><div class="brand"><span class="mark" aria-hidden="true">🌱</span><div><strong>Shepherdiland</strong><small>我的回訪</small></div></div><div class="top-actions"><span id="mode"></span>${button('⚙', 'settings', '', 'icon settings-button')}</div></header>
  <main id="workspace" hidden>
   <section id="island" aria-label="回訪島嶼">
-   <div class="scene" id="world"><div class="scene-caption"><h1>${icon('sprig')}<span>我的回訪</span></h1><div class="scene-ornament" aria-hidden="true">★</div></div><div id="scene-progress"></div><div class="scene-actions"><button type="button" class="icon" data-action="reset" aria-label="重設視角" title="重設視角">${icon('reset')}</button><button type="button" class="icon" data-action="period" aria-label="自動時段" title="自動時段">${icon('period')}</button></div><p class="fallback">目前裝置無法顯示 3D，仍可從名單開啟成員資料。</p></div>
+   <div class="scene" id="world">${backdrop}<div class="scene-caption"><h1>${icon('sprig')}<span>我的回訪</span></h1><div class="scene-ornament" aria-hidden="true">★</div></div><div id="scene-progress"></div><div class="scene-actions"><button type="button" class="icon" data-action="reset" aria-label="重設視角" title="重設視角">${icon('reset')}</button><button type="button" class="icon" data-action="period" aria-label="自動時段" title="自動時段">${icon('period')}</button></div><p class="fallback">目前裝置無法顯示 3D，仍可從名單開啟成員資料。</p></div>
    <section id="sheet" class="sheet"><button class="sheet-handle" aria-expanded="false" aria-label="展開本週回訪"><span></span></button><div id="overview"></div></section>
   </section>
   <section id="page" hidden></section>
@@ -51,7 +58,8 @@ document.addEventListener('error', event => {
   if (image instanceof HTMLImageElement && image.parentElement?.classList.contains('portrait')) image.hidden = true
 }, true)
 const modal = $<HTMLDialogElement>('#modal'), detail = $<HTMLDialogElement>('#detail')
-const scene = mountIsland($('#world'), openDetail)
+const world = $('#world')
+const scene = mountIsland(world, openDetail)
 const todayRows = () => state.appointments.filter(row => row.date === day() && row.status === 'planned').sort((a, b) => a.time.localeCompare(b.time))
 const find = (key: string) => state.contacts.find(contact => contact.id === key)
 const stateOf = (contact: Contact) => status(contact, state.interactions)
@@ -59,7 +67,7 @@ const nextAppointments = (key: string) => state.appointments.filter(row => row.c
 const lastText = (elapsed: number) => !Number.isFinite(elapsed) ? '尚未聯繫' : elapsed ? `${elapsed} 天沒聯繫` : '今天聯繫過'
 const refreshTheme = () => {
   const current = period ?? localPeriod()
-  document.documentElement.dataset.period = String(current)
+  document.documentElement.dataset.period = stage.dataset.period = world.dataset.period = String(current)
   scene?.period(period)
   detailScene?.period(period)
   const control = $('[data-action="period"]')
@@ -67,6 +75,7 @@ const refreshTheme = () => {
   control.setAttribute('aria-label', control.title)
   control.dataset.manual = String(period !== null)
 }
+refreshTheme()
 function progress(count = state.contacts.filter(contact => stateOf(contact).linked).length, goal = state.settings.weekly_target) {
   const fraction = Math.min(100, count / goal * 100)
   return `<div class="progress" role="img" aria-label="本週 ${count}/${goal} 人"><div class="progress-ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="progress-track" cx="50" cy="50" r="44"/>${fraction ? `<circle class="progress-value" cx="50" cy="50" r="44" pathLength="100" stroke-dasharray="${fraction} 100"/>` : ''}</svg><div class="progress-center"><small>本週</small><strong>${count}/${goal}</strong></div></div><span class="progress-count" aria-hidden="true">${count}/${goal} 人</span></div>`

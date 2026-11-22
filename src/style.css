@@ -1,5 +1,6 @@
 :root {
   font-family: "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --app-width:430px;
   --ink:#382618; --muted:#6e6053; --page:#fff8ed; --surface:#fffdfa;
   --line:#eee3d4; --soft:#f5ebd8; --accent:#4f773f; --accent-ink:#fff;
   color:var(--ink); background:var(--page); color-scheme:light;
@@ -11,8 +12,11 @@
 }
 * {box-sizing:border-box}
 body {margin:0; min-width:300px; transition:background .7s,color .7s}
+#app {position:relative; width:100%; max-width:var(--app-width); min-height:100dvh; margin-inline:auto; background:var(--page); container-type:inline-size}
+#stage {position:fixed; inset:-24px; overflow:hidden; filter:blur(20px) brightness(.88); background:#fff0d7; pointer-events:none}
+@media(max-width:430px) {#stage {display:none}}
 h1,h2,h3,h4,p,figure {margin:0}
-h1 {font-size:clamp(1.65rem,4vw,2.65rem); line-height:1.23}
+h1 {font-size:clamp(1.65rem,8cqw,2rem); line-height:1.23}
 h2 {font-size:1.16rem}
 h3 {font-size:1rem}
 p,small {color:var(--muted); line-height:1.5}
@@ -24,23 +28,23 @@ button:focus-visible,a:focus-visible,summary:focus-visible {outline:3px solid #e
 [hidden] {display:none!important}
 .top,.brand,.top-actions,.section-row,.page-heading,.actions,.chips,.chat-links,.appointment-actions {display:flex; align-items:center; gap:.55rem}
 .top,.section-row,.page-heading {justify-content:space-between}
-.top {height:68px; padding:0 max(1rem,calc((100% - 1080px)/2)); background:var(--surface); border-bottom:1px solid var(--line)}
+.top {height:68px; padding:0 1rem; background:var(--surface); border-bottom:1px solid var(--line)}
 .brand strong,.brand small {display:block}
 .brand strong {font:700 1.23rem Georgia,serif}
 .brand small,.eyebrow {font-size:.72rem; font-weight:700; letter-spacing:.14em}
 .mark,.section-title>span {display:grid; place-items:center; width:42px; height:42px; border-radius:14px; background:var(--soft); color:var(--accent); flex:none}
 .icon {width:42px; height:42px; border-radius:50%; background:var(--soft); color:var(--ink); border:1px solid var(--line)}
 #mode:not(:empty),.chip {font-size:.73rem; border-radius:99px; padding:.3rem .55rem; background:var(--soft); color:var(--accent)}
-#workspace {max-width:1120px; margin:auto; padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+#workspace {padding-bottom:calc(15.55cqw + env(safe-area-inset-bottom))}
 .scene {position:relative; overflow:hidden; isolation:isolate; background:#fff0d7; touch-action:none}
 .scene canvas,.scene-labels {position:absolute; inset:0; touch-action:none}
 .scene-labels {pointer-events:none}
 .eyebrow {display:block; color:var(--accent); margin-bottom:.26rem}
 .fallback {display:none}
 .no-webgl .fallback {display:block; position:absolute; inset:45% 1rem auto; text-align:center; color:#5c472f}
-.sheet {position:relative; z-index:3; margin-top:-14px; border-radius:28px 28px 0 0; background:var(--page); padding:0 1.2rem 1rem}
-.sheet-handle {display:grid; place-items:center; width:100%; height:20px; touch-action:none; border:0; padding:0; background:none}
-.sheet-handle span {height:4px; width:38px; background:#c9c2b7; border-radius:10px}
+.sheet {position:relative; z-index:3; margin-top:-2cqw; border-radius:5.5cqw 5.5cqw 0 0; background:var(--page); padding:0 5.4cqw 1cqw; box-shadow:0 -5px 18px #715b4110}
+.sheet-handle {display:grid; place-items:center; width:100%; height:4.6cqw; touch-action:none; border:0; padding:0; background:none}
+.sheet-handle span {height:.9cqw; width:9.4cqw; background:#c9c2b7; border-radius:10px}
 .overview-grid,#page,.detail-body {display:grid; gap:1.1rem}
 .section-title {display:flex; gap:.55rem; align-items:center}
 .section-title>span {width:36px; height:36px; font-size:1.15rem}
@@ -87,7 +91,7 @@ button:focus-visible,a:focus-visible,summary:focus-visible {outline:3px solid #e
 .calendar-day.today {border-color:var(--accent)}
 .calendar-day.current {background:var(--accent); color:var(--accent-ink)}
 .calendar-day i {position:absolute; left:calc(50% - 2px); bottom:3px; width:4px; height:4px; border-radius:50%; background:#e0a24f}
-dialog {color:var(--ink); background:var(--page); border:1px solid var(--line); border-radius:20px; width:min(calc(100% - 1rem),650px); max-height:calc(100dvh - 1rem); padding:0}
+dialog {color:var(--ink); background:var(--page); border:1px solid var(--line); border-radius:20px; width:calc(min(100%,var(--app-width)) - 1rem); max-height:calc(100dvh - 1rem); padding:0}
 dialog::backdrop {background:#203b486b; backdrop-filter:blur(3px)}
 .dialog-head {display:flex; justify-content:space-between; align-items:center; padding:.55rem .85rem; background:var(--surface); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:4}
 .dialog-body {padding:.8rem}
@@ -117,17 +121,8 @@ summary {cursor:pointer; color:var(--accent); font-weight:700}
 .login {max-width:400px; width:calc(100% - 2rem); margin:3rem auto}
 #toast {position:fixed; z-index:10; bottom:calc(80px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); max-width:90%; width:max-content; background:#29473d; color:#fff; border-radius:12px; padding:.65rem .9rem; font-size:.82rem; pointer-events:none}
 #toast:empty {display:none}
-@media(min-width:760px) {
-  #workspace {padding-inline:1rem}
-  .sheet {padding-inline:1.2rem}
-  .split {grid-template-columns:repeat(2,minmax(0,1fr))}
-  .filters .form-grid {grid-template-columns:repeat(4,minmax(0,1fr))}
-  .detail-hero {grid-template-columns:145px 1fr auto}
-  .detail-hero>.soft,.detail-hero .scene {grid-column:auto; grid-row:auto}
-}
-
 body:has(#workspace:not([hidden]) #island:not([hidden])) .top {
-  position:absolute; inset:0 0 auto; max-width:716px; height:0; margin:auto; padding:0; border:0; z-index:5;
+  position:absolute; inset:0 0 auto; height:0; padding:0; border:0; z-index:5;
 }
 body:has(#workspace:not([hidden]) #island:not([hidden])) :is(.brand,#mode) {display:none}
 body:has(#workspace:not([hidden]) #island:not([hidden])) .top-actions {position:absolute; top:max(10px,env(safe-area-inset-top)); left:10px}
@@ -137,31 +132,30 @@ body:has(#workspace:not([hidden]) #island:not([hidden])) .settings-button {
 #island {
   --ink:#302015; --muted:#504940; --page:#fffdf8; --surface:#fffefa; --line:#ede8dd;
   --soft:#f5ecdd; --accent:#567b42; --accent-ink:#fff;
-  max-width:716px; margin:auto; color:var(--ink); background:var(--page); color-scheme:light;
+  color:var(--ink); background:var(--page); color-scheme:light; min-height:calc(100dvh - 15.55cqw - env(safe-area-inset-bottom));
 }
 #world {
-  --world-height:clamp(345px,56.9svh,660px);
+  --world-height:100.6cqw;
   height:var(--world-height);
-  background:
-    radial-gradient(ellipse at 12% 36%,#fffbd1b8 0,transparent 46%),
-    radial-gradient(ellipse at 83% 29%,#fff8e0b5 0,transparent 43%),
-    radial-gradient(ellipse at 55% 85%,#fff1e0dd 0,transparent 58%),
-    linear-gradient(165deg,#ffebd1,#fff1dc 46%,#efdfd2 82%,#ded5ca);
 }
-#world[data-period="0"] {background-color:#ffefcc}
-#world[data-period="2"] {background:radial-gradient(ellipse at 22% 33%,#fff7ca,transparent 58%),linear-gradient(#ffe2c5,#fff0d5 55%,#eadbd7)}
-#world[data-period="3"] {background:radial-gradient(ellipse at 45% 25%,#fff0d7,transparent 57%),linear-gradient(#ead7c7,#f5e2ce 56%,#d8cbc4)}
+.scene-plate {position:absolute; inset:0; background-size:cover; background-position:center top; pointer-events:none; opacity:0; transition:opacity 1.5s}
+#world .scene-plate {z-index:-1}
+:is(#world,#stage):is([data-period="0"],[data-period="1"]) > .plate-day,
+:is(#world,#stage)[data-period="2"] > .plate-dusk,
+:is(#world,#stage)[data-period="3"] > .plate-night {opacity:1}
+@media(prefers-reduced-motion:reduce) {.scene-plate {transition:none}}
 .scene-caption,#scene-progress,.scene-actions {position:absolute; z-index:2}
-.scene-caption {top:max(clamp(31px,5svh,64px),calc(env(safe-area-inset-top) + 3px)); left:0; right:0; text-align:center; color:#382211; pointer-events:none}
+.scene-caption {top:max(10.6cqw,calc(env(safe-area-inset-top) + 3px)); left:0; right:0; text-align:center; color:#382211; pointer-events:none}
 .scene-caption h1,.sheet-heading h1 {
   font-family:"Kaiti TC","BiauKai","DFKai-SB","PingFang TC",sans-serif;
   font-weight:900; letter-spacing:.055em;
 }
-.scene-caption h1 {display:flex; align-items:center; justify-content:center; gap:.3em; font-size:clamp(29px,9.8vw,58px); line-height:1; padding-right:.28em; white-space:nowrap}
+.scene-caption h1 {display:flex; align-items:center; justify-content:center; gap:.3em; font-size:9.2cqw; line-height:1; padding-right:8cqw; white-space:nowrap}
 .scene-caption .glyph-sprig {width:.9em; height:.9em}
-.scene-ornament {display:flex; align-items:center; justify-content:center; gap:.55rem; margin:.35rem 0 0; color:#a67d36; font-size:.81rem}
+.scene-ornament {display:flex; align-items:center; justify-content:center; gap:1.5cqw; margin:1.2cqw 0 0; color:#a67d36; font-size:3.1cqw; line-height:1}
 .scene-ornament::before,.scene-ornament::after {content:""; width:min(20%,8.6rem); height:1px; background:#cbb483}
-#scene-progress {top:max(clamp(25px,5.2svh,64px),calc(env(safe-area-inset-top) + 3px)); right:clamp(9px,3.7vw,26px)}
+#world[data-period="3"]:has(.plate-night) :is(.scene-caption,.scene-ornament) {color:#fff2d5}
+#scene-progress {top:max(9.6cqw,calc(env(safe-area-inset-top) + 3px)); right:3.8cqw}
 .glyph {width:1em; height:1em; display:inline-block; flex:none; vertical-align:middle}
 .progress {display:grid; gap:.13rem; justify-items:center; text-align:center; color:var(--ink); flex:none}
 .progress-ring {width:71px; aspect-ratio:1; position:relative; display:grid; place-items:center}
@@ -172,89 +166,90 @@ body:has(#workspace:not([hidden]) #island:not([hidden])) .settings-button {
 .progress-center small {display:none; color:inherit}
 .progress-center strong {font-size:1.28rem}
 .progress-count {font-size:.86rem; font-weight:750}
-#scene-progress .progress-ring {width:clamp(41px,12vw,73px); border-radius:50%; background:#fffbef88}
+#scene-progress .progress-ring {width:11.8cqw; border-radius:50%; background:#fffbefb8}
 #scene-progress .progress-track {stroke:#eddab5}
 #scene-progress .progress-value {stroke:#65b35b}
-#scene-progress .progress-center small {display:block; font-size:.59rem; font-weight:700}
-#scene-progress .progress-center strong {font-size:.84rem}
+#scene-progress .progress-center small {display:block; font-size:2.15cqw; font-weight:700}
+#scene-progress .progress-center strong {font-size:2.65cqw}
 #scene-progress .progress-count {display:none}
-.scene-actions {bottom:18px; right:8px; display:flex; gap:4px}
+.scene-actions {bottom:3.15cqw; right:1.2cqw; display:flex; gap:4px}
 .scene-actions .icon {width:26px; height:26px; padding:0; background:#fff9edb8; color:#796447; border-color:#e7d7b96b}
 .scene-actions .icon[data-manual="true"] {background:#f4e1bd; color:#41311b}
 .nametag,.island-sign {
   display:flex; align-items:center; gap:.3em; border:0; border-radius:100px;
   box-shadow:0 2px 5px #53351f21; line-height:1.05; white-space:nowrap; color:#382618; font-weight:800;
 }
-.nametag {display:block; overflow:hidden; text-overflow:ellipsis; pointer-events:auto; padding:.26em .54em; background:#fffdfa; font-size:clamp(11px,3.75vw,16px)}
+.nametag {display:block; overflow:hidden; text-overflow:ellipsis; pointer-events:auto; padding:.26em .54em; background:#fffdfa; font-size:clamp(11px,3.75cqw,16px)}
+#world .nametag {padding:.31em .67em; font-size:3.15cqw}
 .nametag:disabled {opacity:1; pointer-events:none}
-.island-sign {padding:.42em .75em; background:#fff6dbf2; font-size:clamp(12px,3.77vw,18px)}
+.island-sign {padding:.42em .75em; background:#fff6dbf2; font-size:3.3cqw}
 .island-sign .glyph {color:#876c35; width:1.37em; height:1.23em}
 .attention-bubble {
   display:grid; place-items:center; position:relative; width:1.47em; height:1.47em; border-radius:50%;
   background:linear-gradient(145deg,#ff725f,#cd3532); box-shadow:0 2px 5px #8e272640; color:white;
-  font-size:clamp(16px,5vw,23px); font-weight:900; line-height:1;
+  font-size:clamp(16px,5cqw,23px); font-weight:900; line-height:1;
 }
+#world .attention-bubble {font-size:4.85cqw}
 .attention-bubble::after {content:""; position:absolute; top:91%; left:48%; border:.23em solid transparent; border-top-color:#d23b33; transform:rotate(12deg)}
 .analysis-wait span {animation:pulse 1.15s ease-in-out infinite}
 @keyframes pulse {50% {scale:1.1; box-shadow:0 0 0 6px #fff0a958}}
-.sheet {box-shadow:0 -5px 18px #715b4110}
 #island.expanded #world {margin-bottom:calc(66px - var(--world-height)); filter:brightness(.79)}
 #island.expanded #world canvas {transform:translateY(calc(var(--world-height) * -.325))}
 #island.expanded :is(.scene-caption,#scene-progress,.scene-actions,.scene-labels) {visibility:hidden}
 body:has(#island.expanded:not([hidden])) .top-actions {visibility:hidden}
-#island.expanded .sheet {min-height:calc(100svh - 52px); background:#fdfaf3}
+#island.expanded .sheet {min-height:calc(100svh - 52px); background:#fdfaf3; padding-bottom:1rem}
 #island.expanded .sheet-handle {height:25px}
 .sheet-heading {display:flex; justify-content:space-between; align-items:flex-start; min-height:98px; margin-bottom:-.35rem}
-.sheet-heading h1 {font-size:clamp(32px,8.7vw,50px); margin-top:.75rem}
+.sheet-heading h1 {font-size:clamp(30px,8.7cqw,38px); margin-top:.75rem}
 #island.expanded .overview-grid {gap:.95rem}
-#island .overview-grid {grid-template-columns:minmax(0,1fr); gap:.65rem}
-#island .overview-grid h2,.sheet-distribution h3 {font-size:clamp(16px,4.6vw,22px); line-height:1.2}
-.sheet-title-button {display:inline-flex; align-items:center; gap:.28em; padding:0; background:none; border:0; color:inherit; text-align:left; font-weight:inherit}
+#island .overview-grid {grid-template-columns:minmax(0,1fr); gap:2cqw}
+#island .overview-grid h2,.sheet-distribution h3 {font-size:4.15cqw; line-height:1.2}
+.sheet-title-button {display:inline-flex; vertical-align:top; align-items:center; gap:.28em; padding:0; background:none; border:0; color:inherit; text-align:left; font-weight:inherit}
 .sheet-title-button:hover {color:var(--accent)}
 .today-section {
-  padding:.54rem .65rem .56rem; border:1px solid #d8e2ee; border-radius:12px;
+  min-height:17.8cqw; padding:1.7cqw 2.4cqw; border:1px solid #d8e2ee; border-radius:2.1cqw;
   background:linear-gradient(115deg,#ecf5fe,#f1f7ff);
 }
-#island:not(.expanded) .today-section h2 {font-size:clamp(13px,3.7vw,18px)}
+#island:not(.expanded) .today-section h2 {display:flex; font-size:3.05cqw}
 .today-section h2 .glyph {color:#2264a4; margin-right:.13em}
-#island .appointment-list,#island .people {margin-top:.3rem}
+#island .appointment-list,#island .people {margin-top:1.05cqw}
 .today-appointment {grid-template-columns:minmax(0,1fr) auto; border:0; background:none; box-shadow:none; padding:0; gap:.44rem}
 .appointment-summary {min-width:0}
-.appointment-summary strong {display:block; color:#221e1b; font-size:clamp(13px,3.57vw,17px); line-height:1.35; overflow-wrap:anywhere}
-.appointment-summary small {display:flex; align-items:center; gap:.23em; margin-top:.14rem; font-size:clamp(10px,3vw,15px); font-weight:650; color:#302d29}
+.appointment-summary strong {display:block; color:#221e1b; font-size:3.28cqw; line-height:1.35; overflow-wrap:anywhere}
+.appointment-summary small {display:flex; align-items:center; gap:.23em; margin-top:.14rem; font-size:2.77cqw; font-weight:650; color:#302d29}
 .appointment-summary .glyph {color:#326497}
-.map-button {display:grid; place-items:center; width:37px; height:37px; border-radius:50%; background:#2c72cd; color:#fff; box-shadow:0 2px 4px #2d5a9e3d}
-.map-button .glyph {width:21px; height:21px}
-.expanded .today-section {background:none; border:0; padding:0}
+.map-button {display:grid; place-items:center; width:8.5cqw; height:8.5cqw; border-radius:50%; background:#2c72cd; color:#fff; box-shadow:0 2px 4px #2d5a9e3d}
+.map-button .glyph {width:4.5cqw; height:4.5cqw}
+.expanded .today-section {min-height:0; background:none; border:0; padding:0}
 .expanded .today-appointment {
   grid-template-columns:auto minmax(0,.54fr) minmax(0,.46fr); background:var(--surface); border:1px solid #f1ede5;
   padding:.34rem .65rem; min-height:66px; border-radius:12px; box-shadow:0 3px 6px #59402513;
 }
 .expanded .appointment-portrait {width:49px; height:49px; margin-right:.5rem}
-.expanded .appointment-summary strong {font-size:clamp(19px,5vw,26px); letter-spacing:.025em}
-.expanded .appointment-summary span,.appointment-place {font-size:clamp(13px,3.7vw,18px); line-height:1.2; font-weight:700}
+.expanded .appointment-summary strong {font-size:5.25cqw; letter-spacing:.025em}
+.expanded .appointment-summary span,.appointment-place {font-size:3.7cqw; line-height:1.2; font-weight:700}
 .appointment-place {text-align:right; overflow-wrap:anywhere}
 .appointment-place:hover {text-decoration:underline}
 #island .people {gap:0; border:1px solid #f0ebe2; border-radius:12px; background:var(--surface)}
-#island .person {grid-template-columns:minmax(0,1fr) auto auto; border:0; box-shadow:none; padding:.2rem .5rem; gap:clamp(.35rem,2.2vw,1.1rem); border-radius:0; background:transparent; min-height:45px}
+#island .person {grid-template-columns:minmax(0,1fr) auto auto; border:0; box-shadow:none; padding:.45cqw 2cqw .45cqw .9cqw; gap:3.1cqw; border-radius:0; background:transparent; min-height:10.42cqw}
 #island .person + .person {border-top:1px solid #f1eee6}
-#island .portrait {width:clamp(34px,10.2vw,54px); height:auto; aspect-ratio:1}
-#island .person-main {gap:clamp(.42rem,3vw,1rem)}
-#island .person-main strong {font-size:clamp(.85rem,4vw,1.2rem); line-height:1.2}
-#island .person-main small {font-size:clamp(.64rem,3.1vw,.88rem); line-height:1.35; margin-top:.13em}
+#island .portrait {width:9.4cqw; height:auto; aspect-ratio:1}
+#island .person-main {gap:3.2cqw}
+#island .person-main strong {font-size:3.42cqw; line-height:1.2}
+#island .person-main small {font-size:2.48cqw; line-height:1.35; margin-top:.13em}
 .sheet-level {display:none}
 .person .day-badge {display:inline-block; border-radius:7px; background:#d8a136; color:#fff; padding:.24rem .45rem; font-size:.79rem; font-weight:750; white-space:nowrap}
 .person .day-urgent {background:#d5534b}
-#island .chat-links {flex-wrap:nowrap; gap:clamp(.28rem,2.5vw,1.1rem)}
-#island .chat {width:29px; height:29px; min-height:0; padding:0; border-radius:7px; color:white}
-#island .chat .glyph {width:20px; height:20px}
+#island .chat-links {flex-wrap:nowrap; gap:3cqw}
+#island .chat {width:5.8cqw; height:5.8cqw; min-height:0; padding:0; border-radius:1.5cqw; color:white}
+#island .chat .glyph {width:4.55cqw; height:4.55cqw}
 #island .line {--line-brand:#1ca24c; background:var(--line-brand)}
 #island .ig {background:radial-gradient(circle at 22% 103%,#ffd567 4%,#f58642 24%,#e43f72 48%,#9341af 72%,#653eb2 100%)}
 #island .disabled {opacity:.78}
 #island.expanded .people {box-shadow:0 3px 7px #59402513}
-#island.expanded .person {grid-template-columns:minmax(0,1fr) auto auto; grid-template-rows:auto auto; column-gap:clamp(.62rem,4vw,1.6rem); row-gap:0; padding:.35rem .62rem; min-height:65px}
+#island.expanded .person {grid-template-columns:minmax(0,1fr) auto auto; grid-template-rows:auto auto; column-gap:4cqw; row-gap:0; padding:.35rem .62rem; min-height:65px}
 .expanded :is(.person-main,.sheet-level) {grid-row:1 / 3}
-#island.expanded .person-main .portrait {width:clamp(40px,12.4vw,62px)}
+#island.expanded .person-main .portrait {width:12.4cqw}
 .expanded .sheet-level {display:flex; grid-column:2}
 .expanded .sheet-level .level {font-size:0}
 .expanded .sheet-level .level::before {width:13px; height:13px}
@@ -272,28 +267,20 @@ body:has(#island.expanded:not([hidden])) .top-actions {visibility:hidden}
 
 .nav {
   display:grid; grid-template-columns:repeat(5,1fr); position:fixed; left:50%; bottom:0; transform:translateX(-50%);
-  width:min(calc(100% - 8px),710px); padding:.22rem .35rem calc(.38rem + env(safe-area-inset-bottom)); z-index:6;
+  width:calc(min(100%,var(--app-width)) - 1.4cqw); padding:.7cqw 1.2cqw calc(1.5cqw + env(safe-area-inset-bottom)); z-index:6;
   background:linear-gradient(150deg,#f9efe0,#fff6eb); border:1px solid #f5ebdd; border-bottom:0; border-radius:20px 20px 0 0;
   box-shadow:0 -3px 15px #5e482c08;
 }
 .nav button {
-  display:grid; place-content:center; justify-items:center; gap:.1rem; min-height:56px; padding:0;
-  background:none; border:0; border-radius:10px; color:#736655; font-size:clamp(.78rem,3.35vw,.99rem);
+  display:grid; place-content:center; justify-items:center; gap:.22cqw; min-height:13.1cqw; padding:0;
+  background:none; border:0; border-radius:10px; color:#736655; font-size:3.1cqw;
 }
-.nav .glyph {width:clamp(23px,6.7vw,39px); height:clamp(23px,6.7vw,39px)}
-.nav .glyph-island {width:clamp(40px,10vw,60px); height:clamp(31px,8vw,46px)}
+.nav .glyph {width:6.6cqw; height:6.6cqw}
+.nav .glyph-island {width:10.6cqw; height:8.4cqw}
 .nav [aria-current=page] {color:#322317; font-weight:800}
 .nav .nav-add {
-  place-self:start center; min-height:0; width:52px; height:52px; margin-top:-16px; border-radius:50%;
+  place-self:start center; min-height:0; width:11.4cqw; height:11.4cqw; margin-top:-4.4cqw; border-radius:50%;
   color:#fff; background:linear-gradient(145deg,#f8786b,#de534c); box-shadow:0 4px 9px #93483a43;
 }
-.nav-add .glyph {width:29px; height:29px}
+.nav-add .glyph {width:5.7cqw; height:5.7cqw}
 .sr-only {position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
-@media(min-width:560px) {
-  .sheet {padding-inline:1.5rem}
-  #island:not(.expanded) .overview-grid {grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}
-  #island:not(.expanded) .today-section {align-self:start}
-  #island.expanded .sheet-heading {min-height:96px}
-  .sheet-heading .progress-ring {width:88px}
-  #island .chat {width:33px; height:33px}
-}

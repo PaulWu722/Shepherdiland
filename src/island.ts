@@ -5,16 +5,18 @@ import { demoLook, levels } from './model'
 import type { Contact, Settings } from './model'
 import { icon } from './icons'
 import { avatar } from './character'
-import { cloud, distantIsland, dressIsland, shadowTexture } from './scenery'
+import { dressIsland, fireflies, shadowTexture } from './scenery'
 import { characterFile, loadModel, release } from './glb'
 import { islandSurface } from './island-model'
-import { animationPreview, islandSlot } from './island-layout'
+import { animationPreview, compositionTop, compositionWidth, elevation, islandSlot, platforms } from './island-layout'
 
 export type IslandMember = { contact: Contact; mood: number; linked: boolean; count: number }
 const palette = ['#fff0d8', '#fff0d9', '#fbe1cb', '#edddce']
-const platforms = [{ y: 2.12, z: -2.7, scale: .92 }, { y: -.67, z: .95, scale: 1 }]
-const detailPlatform = { y: 0, z: 0, scale: .65 }
-const elevation = 35 * Math.PI / 180
+const detailPlatform = { x: 0, y: 0, z: 0, scale: .65, relief: 1, signDepth: 0, memberDepth: 0 }
+const keyColors = ['#fff2dd', '#fff8ed', '#ffc083', '#87aaff'].map(value => new T.Color(value))
+const keyIntensities = [2.85, 3.05, 2.5, 1.2]
+const fillColors = ['#fffbef', '#ffffff', '#ffe2c7', '#9cbdff'].map(value => new T.Color(value))
+const fillIntensities = [1.14, 1.2, .91, .55]
 const preview = animationPreview(new URLSearchParams(import.meta.env.DEV ? location.search : ''))
 export const periods = ['晨光', '白日', '黃昏', '夜晚']
 
@@ -31,16 +33,16 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
   catch { host.classList.add('no-webgl'); return null }
   const modelDirectory = new URL('models/', new URL(import.meta.env.BASE_URL, document.baseURI))
   renderer.setPixelRatio(Math.min(devicePixelRatio, low ? 1 : 1.85))
-  renderer.toneMapping = T.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.12
+  renderer.toneMapping = compact ? T.ACESFilmicToneMapping : T.NeutralToneMapping
+  renderer.toneMappingExposure = compact ? 1.12 : 1.07
   renderer.shadowMap.enabled = !low
-  renderer.shadowMap.type = T.PCFSoftShadowMap
+  renderer.shadowMap.type = T.PCFShadowMap
   const labels = new CSS2DRenderer()
   labels.domElement.className = 'scene-labels'
   host.prepend(renderer.domElement, labels.domElement)
   const scene = new T.Scene()
-  const sky = new T.Color(palette[localPeriod()])
-  const fog = new T.FogExp2(sky, .018)
+  const initialPeriod = localPeriod()
+  const fog = compact ? new T.FogExp2(palette[initialPeriod], .018) : null
   scene.fog = fog
   const camera = new T.OrthographicCamera(-1, 1, 1, -1, .1, 116)
   const controls = new OrbitControls(camera, renderer.domElement)
@@ -59,25 +61,24 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
     controls.target.set(0, 0, 0)
     camera.position.copy(offset)
     controls.update()
-    units = compact ? Math.max(6.7 / w, 6.0 / h) : Math.max(10.65 / w, 11.0 / h)
-    const upper = platforms[0]
-    const mid = compact ? -.21 : upper.y * Math.cos(elevation) - upper.z * Math.sin(elevation) - h * units * .018 + (10.65 / w < 11.0 / h ? .6 : 0) // wide screens: drop the scene so tags clear the title
+    units = compact ? Math.max(6.7 / w, 6.0 / h) : compositionWidth / w
     camera.zoom = 1
     camera.left = -w * units / 2
     camera.right = w * units / 2
-    camera.top = mid + h * units / 2
-    camera.bottom = mid - h * units / 2
+    camera.top = compact ? -.21 + h * units / 2 : compositionTop
+    camera.bottom = camera.top - h * units
     camera.updateProjectionMatrix()
   }
-  const sun = new T.DirectionalLight('#fff0d2', 3.3)
-  sun.position.set(-8, 16, 7)
+  const sun = new T.DirectionalLight(compact ? '#fff0d2' : keyColors[initialPeriod], compact ? 3.3 : keyIntensities[initialPeriod])
+  sun.position.set(compact ? -8 : -10, 16, compact ? 7 : 6)
   sun.castShadow = !low
   sun.shadow.mapSize.set(2048, 2048)
   Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8, near: 1, far: 50 })
   sun.shadow.bias = -.0004
   sun.shadow.normalBias = .03
-  sun.shadow.radius = 5
-  scene.add(sun, new T.HemisphereLight('#fffbef', '#a8865b', .95), new T.AmbientLight('#fff1de', .18))
+  sun.shadow.radius = compact ? 5 : 4.5
+  const fill = new T.HemisphereLight(compact ? '#fffbef' : fillColors[initialPeriod], compact ? '#a8865b' : '#8a775f', compact ? .95 : fillIntensities[initialPeriod])
+  scene.add(sun, fill, new T.AmbientLight(compact ? '#fff1de' : '#fff8ee', compact ? .18 : .16))
   const texture = shadowTexture()
   let disposed = false
   const requests: (() => void)[] = [], upgrades: (() => void)[] = []
@@ -91,8 +92,8 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
   const islands = (compact ? [detailPlatform] : platforms).map((platform, i) => {
     const group = new T.Group()
     const fallback = new T.Group()
-    group.position.set(0, platform.y, platform.z)
-    group.scale.setScalar(platform.scale)
+    group.position.set(platform.x, platform.y, platform.z)
+    group.scale.set(platform.scale, platform.scale * platform.relief, platform.scale)
     group.add(fallback)
     scene.add(group)
     let label: CSS2DObject | undefined
@@ -102,11 +103,16 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
       node.innerHTML = icon('people')
       node.append(i === 0 ? '本週已聯繫' : '待聯繫')
       label = new CSS2DObject(node)
-      label.position.set(0, .34, 2.11)
+      label.position.set(0, .30, platform.signDepth)
       group.add(label)
     }
-    const { fire, lamp } = dressIsland(fallback, low, i === 1, texture)
-    const island = { platform, fire, lamp, surface: undefined as ReturnType<typeof islandSurface> }
+    const { fire, lamp } = dressIsland(fallback, low, i === 1, texture, !compact)
+    const flies = compact ? null : fireflies(group, texture, low ? 5 : 9, i)
+    if (!compact) {
+      lamp.add(new T.PointLight('#ffba69', 1.7, 2.8))
+      fire.add(new T.PointLight('#ff984f', 2.1, 3.2))
+    }
+    const island = { platform, fire, lamp, flies, surface: undefined as ReturnType<typeof islandSurface> }
     requestModel(i === 0 ? 'island_top' : 'island_bottom', source => {
       const surface = islandSurface(source)
       if (!surface) return
@@ -123,26 +129,6 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
     })
     return island
   })
-  if (!compact) {
-    // Place distant props by projected height while keeping depth for the warm aerial haze.
-    const place = (object: T.Object3D, x: number, height: number, depth: number, scale: number) => {
-      object.position.set(x, (height + depth * Math.sin(elevation)) / Math.cos(elevation), depth)
-      object.scale.setScalar(scale)
-      scene.add(object)
-    }
-    const distant = [[4.32,4.40,-15,.27],[-5.1,1.51,-19,.34],[4.96,-.63,-17,.28],[-5.42,-3.30,-23,.28],[5.72,-3.32,-25,.26]]
-    distant.forEach(([x, height, depth, scale], i) => place(distantIsland(21 + i, low), x, height, depth, scale))
-    for (const [x, height, depth, scale] of [[-4.22,5.98,-12,.72],[4.04,6.35,-13,.82],[-5.29,3.50,-24,.92],[5.49,1.61,-22,.85],[-4.93,-1.52,-19,.74],[4.58,-3.75,-23,1.37],[-4.77,-3.43,-24,1.09]]) {
-      place(cloud(low), x, height, depth, scale)
-    }
-  }
-  const orb = new T.Mesh(new T.IcosahedronGeometry(.22, 2), new T.MeshBasicMaterial({ color: '#fff1ce', fog: false }))
-  scene.add(orb)
-  const starGeometry = new T.BufferGeometry()
-  const starPositions = Array.from({ length: low ? 16 : 31 }, (_, i) => [Math.sin(i * 8.4) * 8, -.6 + (i % 7) * .57, -11 - i % 9]).flat()
-  starGeometry.setAttribute('position', new T.Float32BufferAttribute(starPositions, 3))
-  const stars = new T.Points(starGeometry, new T.PointsMaterial({ color: '#fff4cf', size: low ? 1 : 1.6, transparent: true, depthWrite: false }))
-  scene.add(stars)
   const avatars = new Map<string, ReturnType<typeof avatar>>()
   const lookKey = (contact: Contact) => [contact.hair, contact.shirt, demoLook(contact)?.avatar].join('/')
   let members: (IslandMember & { slot: ReturnType<typeof islandSlot> })[] = []
@@ -169,11 +155,14 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
     const hit = ray.intersectObjects([...avatars.values()].map(value => value.root), true)[0]?.object
     hit?.traverseAncestors(object => { const member = object.userData.member; if (member) select(member) })
   }
+  const caption = host.querySelector<HTMLElement>('.scene-caption')
+  let captionBottom = 0
   function resize() {
     const w = host.clientWidth, h = host.clientHeight
     if (!w || !h) return
     renderer.setSize(w, h)
     labels.setSize(w, h)
+    captionBottom = caption ? caption.offsetTop + caption.offsetHeight + 2 : 0
     if (!focus) reset()
   }
   const observer = new ResizeObserver(resize)
@@ -194,7 +183,7 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
   const lightPosition = new T.Vector3()
   const anchor = new T.Vector3()
   function separateNames() {
-    if (members.length < 2) return
+    if (compact) return
     const { width, height } = labels.getSize()
     const boxes = members.map(({ contact }) => {
       const model = avatars.get(contact.id)!
@@ -212,6 +201,7 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
         if (box.left < other.right + 2 && box.right > other.left - 2 &&
             box.bottom > top - 2 && box.bottom - box.height < other.bottom + 2) box.bottom = top - 2
       }
+      box.bottom = Math.max(box.bottom, captionBottom + box.height)
       box.model.label.position.y += (ideal - box.bottom) * units / (camera.zoom * Math.cos(elevation) * box.model.root.scale.y)
       const before = placed.findIndex(other => other.bottom < box.bottom)
       placed.splice(before < 0 ? placed.length : before, 0, box)
@@ -226,26 +216,37 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
       for (const request of requests.splice(0)) request()
       try { upgrades.shift()?.() } catch { /* Keep the fallback for an invalid model. */ }
     } else resize()
-    const dt = Math.max(0, Math.min(.05, (now - (lastFrame || clockStart)) / 1000))
+    const elapsed = (now - (lastFrame || clockStart)) / 1000
+    const dt = Math.max(0, Math.min(.05, elapsed))
     lastFrame = now
     const t = (now - clockStart) / 1000
     const period = override ?? localPeriod()
     if (host.dataset.period !== String(period)) host.dataset.period = String(period)
-    sky.lerp(skyColors[period], .022)
-    fog.color.copy(sky)
-    fog.density = period === 0 ? .020 : .0175
-    sun.intensity += ((period === 3 ? 1.6 : 3.3) - sun.intensity) * .025
-    const date = new Date()
-    const hour = override === null ? date.getHours() + date.getMinutes() / 60 : [7, 12, 17.5, 22][period]
-    const arc = (hour - (period === 3 ? 18 : 5)) / 14 * Math.PI
-    const altitude = Math.max(0, Math.sin(arc))
-    sun.position.lerp(lightPosition.set(-8 + Math.cos(arc) * 3, 13 + altitude * 4, 7), .025)
-    orb.visible = !compact && period === 3
-    orb.position.set(-3.9 + Math.sin(arc) * 7, -.5 + altitude * 1.1, -12)
-    stars.visible = !compact && period === 3
-    stars.material.opacity = .58 + .12 * Math.sin(t * 1.7)
-    stars.rotation.z = Math.sin(t * .13) * .015
-    islands.forEach(({ fire, lamp }) => { fire.visible = period === 3; fire.scale.y = 1 + Math.sin(t * 13) * .15; lamp.visible = period >= 2 })
+    if (fog) {
+      fog.color.lerp(skyColors[period], .022)
+      fog.density = period === 0 ? .020 : .0175
+      sun.intensity += ((period === 3 ? 1.6 : 3.3) - sun.intensity) * .025
+      const date = new Date()
+      const hour = override === null ? date.getHours() + date.getMinutes() / 60 : [7, 12, 17.5, 22][period]
+      const arc = (hour - (period === 3 ? 18 : 5)) / 14 * Math.PI
+      sun.position.lerp(lightPosition.set(-8 + Math.cos(arc) * 3, 13 + Math.max(0, Math.sin(arc)) * 4, 7), .025)
+    } else {
+      const blend = 1 - Math.exp(-2.8 * elapsed)
+      sun.color.lerp(keyColors[period], blend)
+      sun.intensity = T.MathUtils.lerp(sun.intensity, keyIntensities[period], blend)
+      fill.color.lerp(fillColors[period], blend)
+      fill.intensity = T.MathUtils.lerp(fill.intensity, fillIntensities[period], blend)
+    }
+    islands.forEach(({ fire, lamp, flies }, i) => {
+      fire.visible = period === 3
+      fire.scale.y = 1 + Math.sin(t * 13) * .15
+      lamp.visible = period >= 2
+      if (flies) {
+        flies.visible = period === 3
+        flies.position.set(Math.sin(t * .7 + i) * .18, Math.sin(t * 1.1 + i) * .14, Math.cos(t * .6) * .20)
+        flies.material.opacity = .65 + Math.sin(t * 2 + i) * .25
+      }
+    })
     if (focus) {
       const f = Math.min(1, (now - focus.start) / 630)
       const smooth = f * f * (3 - 2 * f)
@@ -293,8 +294,8 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
       const walking = stroll && step > 0 && step < 1
       const offset = stroll ? (step * 2 - 1) * direction * slot.walk : 0
       const localX = slot.x + offset
-      const localZ = slot.z + offset * .4 + (attention && gestureIndex === 1 ? slot.walk * .55 : 0)
-      const x = localX * (surface?.xScale ?? 1) * platform.scale
+      const localZ = platform.memberDepth + slot.z + offset * .4 + (attention && gestureIndex === 1 ? slot.walk * .55 : 0)
+      const x = platform.x + localX * (surface?.xScale ?? 1) * platform.scale
       const z = platform.z + localZ * (surface?.zScale ?? 1) * platform.scale
       model.root.scale.setScalar(slot.height * platform.scale)
       const nameWidth = `${Math.max(1, Math.floor(slot.nameWidth * platform.scale * (surface?.xScale ?? 1) / units * camera.zoom))}px`
@@ -303,9 +304,9 @@ export function mountIsland(host: HTMLElement, choose: (id: string) => void, com
       if (firstPose) model.root.position.set(x, platform.y + .047, z)
       model.root.position.x = jump < 1 ? T.MathUtils.lerp(model.from.x, x, jump) : T.MathUtils.lerp(model.root.position.x, x, follow)
       model.root.position.z = jump < 1 ? T.MathUtils.lerp(model.from.z, z, jump) : T.MathUtils.lerp(model.root.position.z, z, follow)
-      const floorX = (jump < 1 ? x : model.root.position.x) / platform.scale
+      const floorX = ((jump < 1 ? x : model.root.position.x) - platform.x) / platform.scale
       const floorZ = ((jump < 1 ? z : model.root.position.z) - platform.z) / platform.scale
-      const ground = platform.y + (surface?.groundAt(floorX, floorZ) ?? 0) * platform.scale + .047
+      const ground = platform.y + (surface?.groundAt(floorX, floorZ) ?? 0) * platform.scale * platform.relief + .047
       const hop = attention ? Math.abs(Math.sin(phase * 5.4)) * (mood === 1 ? .09 : .20) : mood === 0 && phase % 11 < 1.1 ? Math.abs(Math.sin(phase * 5)) * .12 : 0
       const arcHeight = jump < 1 ? T.MathUtils.lerp(model.from.y, ground, jump) + Math.sin(jump * Math.PI) * 1.7 : ground
       model.root.position.y = arcHeight + Math.sin(celebration * Math.PI) * .46 + hop
