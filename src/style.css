@@ -350,3 +350,10 @@ body:has(#island.expanded:not([hidden])) .top-actions {visibility:hidden}
   #toast {bottom:1rem}
 }
 .switch-user {display:block; margin:1rem auto 0; border:0; background:none; color:#6b7f75; text-decoration:underline}
+
+/* Phone: no sheet, so the island fills the screen down to the tab bar. */
+@media (max-width:899px) {
+  .scene-actions {display:none}
+  #world {--composition-top:calc((100% - var(--world-height)) * .55); height:calc(100dvh - 15.55cqw - env(safe-area-inset-bottom))}
+  #world .island-landscape {inset-block:var(--composition-top) auto; height:var(--world-height)}
+}

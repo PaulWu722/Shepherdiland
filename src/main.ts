@@ -180,7 +180,7 @@ function stats() {
 }
 function renderLayout() {
   $('#island').hidden = tab !== 'island' && !desktop.matches
-  $('#sheet').hidden = tab !== 'island'
+  $('#sheet').hidden = tab !== 'island' || !desktop.matches
   $('#page').hidden = tab === 'island'
   $('#island').classList.toggle('expanded', expanded)
   $('.sheet-handle').setAttribute('aria-expanded', String(expanded))
