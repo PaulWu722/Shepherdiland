@@ -349,3 +349,4 @@ body:has(#island.expanded:not([hidden])) .top-actions {visibility:hidden}
   dialog {width:min(560px,calc(100% - 2rem))}
   #toast {bottom:1rem}
 }
+.switch-user {display:block; margin:1rem auto 0; border:0; background:none; color:#6b7f75; text-decoration:underline}

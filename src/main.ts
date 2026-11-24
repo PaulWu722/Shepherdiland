@@ -588,15 +588,34 @@ document.addEventListener('click', async event => {
   }
 })
 modal.addEventListener('cancel', event => { if (modal.querySelector('form[data-busy]')) event.preventDefault() })
+// Must match accountEmail() in supabase/functions/sign-up/index.ts.
+async function accountEmail(name: string) {
+  const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(name)))
+  return `u${Array.from(hash.slice(0, 16), b => b.toString(16).padStart(2, '0')).join('')}@shepherdiland.app`
+}
+const nameKey = 'shepherdiland:name'
 function signIn() {
   $('#workspace').hidden = true
   $('.settings-button').hidden = true
   $('#auth').hidden = false
-  $('#auth').innerHTML = `<section class="card login"><span class="mark">🌱</span><h1>我的回訪</h1><p>登入 Shepherdiland 管理校園回訪。</p><form>${input('電子郵件', 'email', '', 'type="email" required autocomplete="email"')}${submitButton('寄出登入連結')}</form></section>`
+  const saved = localStorage.getItem(nameKey) || ''
+  const pin = input('6 位數字密碼', 'password', '', `type="password" inputmode="numeric" pattern="\\d{6}" minlength="6" maxlength="6" required autocomplete="${saved ? 'current' : 'new'}-password"`)
+  $('#auth').innerHTML = `<section class="card login"><span class="mark">🌱</span><h1>我的回訪</h1>${saved
+    ? `<p>嗨，${e(saved)}！輸入密碼就能登入。</p><form>${pin}${submitButton('登入')}</form><button class="switch-user" id="switch-user">不是我，換人登入</button>`
+    : `<p>第一次使用：填姓名、自訂 6 位數字密碼。之後在這台裝置只要輸入密碼。</p><form>${input('姓名', 'name', '', 'required maxlength="30" autocomplete="username"')}${pin}${submitButton('登入')}</form>`}</section>`
+  $('#switch-user')?.addEventListener('click', () => { localStorage.removeItem(nameKey); signIn() })
   form(async data => {
-    const { error } = await db!.auth.signInWithOtp({ email: get(data, 'email'), options: { emailRedirectTo: new URL(location.pathname, location.origin).href } })
-    if (error) throw error
-    toast('登入連結已寄出，請查看信箱。')
+    const name = (saved || get(data, 'name')).trim()
+    const password = get(data, 'password')
+    const email = await accountEmail(name)
+    let { error } = await db!.auth.signInWithPassword({ email, password })
+    if (error) {
+      // No account yet (or wrong PIN): sign-up answers 409 「密碼錯誤」 if the name is taken.
+      await invoke('sign-up', { name, password })
+      ;({ error } = await db!.auth.signInWithPassword({ email, password }))
+      if (error) throw error
+    }
+    localStorage.setItem(nameKey, name)
   }, $('#auth'))
 }
 async function start(userId: string) {
